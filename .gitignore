@@ -3,3 +3,12 @@
 ################################################################################
 
 /Library
+/Logs
+/obj
+/TransportStress.csproj
+/MirrorLoadTest.sln
+/Mirror.Weaver.csproj
+/Mirror.csproj
+/Assembly-CSharp.csproj
+/Assembly-CSharp-Editor.csproj
+/.vs

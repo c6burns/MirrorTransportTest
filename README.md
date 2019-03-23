@@ -1,5 +1,7 @@
 # Mirror Transport Stress Test
 
+*Note* -- Requires Unity 2018.3.9+
+
 **Testing a Transport**
 
 1. Open Build Settings and move the appropriate scene for the correct transport to the top of the list (slot 0).
@@ -29,9 +31,3 @@ If Custom Observers is enabled, the output will include an average number of obs
 If Custom Observers is disabled, all clients are observers of all others, which puts the maximum message output load on the server, because for every incoming SyncVar message from any given client, the server must generate an outgoing message to all clients, including the sender.  With 1000 clients, this would produce 1M messages per update loop cycle.
 
 The Spawn Volume translates to width, height, and depth of a cube within which to spawn the clients.  The scene origin will be at the center of this volume.
-
-
-
-
-
-

@@ -1,13 +1,11 @@
 # Mirror Transport Stress Test
 
-**Note** -- Requires Unity 2018.3.9+
+### Requires Unity 2018.3.9+ ###
 
 **Testing a Transport**
 
 1. Open Build Settings and move the appropriate scene for the correct transport to the top of the list (slot 0).
-
 2. Make sure Server Build is checked.
-
 3. Click Build
 
 To start the build as server, run the EXE with a command line arg of "server".  Without this, the default mode is to run as a headless client.

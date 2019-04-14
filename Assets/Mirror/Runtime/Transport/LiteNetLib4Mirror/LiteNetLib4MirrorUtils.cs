@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using LiteNetLib.Utils;
 using LiteNetLib4Mirror.Open.Nat;
 using UnityEngine;
 using UnityEngine.Events;
@@ -23,6 +24,42 @@ namespace Mirror.LiteNetLib4Mirror
 		public static void LogException(Exception exception)
 		{
 			Debug.LogException(exception);
+		}
+
+		public static string ToBase64(string text)
+		{
+			return Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
+		}
+
+		public static string FromBase64(string text)
+		{
+			return Encoding.UTF8.GetString(Convert.FromBase64String(text));
+		}
+
+		public static NetDataWriter ReusePut(NetDataWriter writer, string text, ref string lastText)
+		{
+			if (text != lastText)
+			{
+				lastText = text;
+				writer.Reset();
+				writer.Put(ToBase64(text));
+			}
+
+			return writer;
+		}
+
+		public static NetDataWriter ReusePutDiscovery(NetDataWriter writer, string text, ref string lastText)
+		{
+			if (text != lastText)
+			{
+				string application = Application.productName;
+				lastText = application + text;
+				writer.Reset();
+				writer.Put(application);
+				writer.Put(ToBase64(text));
+			}
+
+			return writer;
 		}
 
 		public static string Concatenate(params string[] array)
@@ -63,7 +100,7 @@ namespace Mirror.LiteNetLib4Mirror
 		/// </summary>
 		/// <param name="ports">Available ports</param>
 		/// <returns>First free port in range</returns>
-		public static int GetFirstFreePort(params ushort[] ports)
+		public static ushort GetFirstFreePort(params ushort[] ports)
 		{
 			if (ports == null || ports.Length == 0) throw new Exception("No ports provided");
 			ushort freeport = ports.Except(Array.ConvertAll(IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners(), p => (ushort)p.Port)).FirstOrDefault();

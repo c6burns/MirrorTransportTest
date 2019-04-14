@@ -7,6 +7,10 @@ namespace Mirror.LiteNetLib4Mirror
 {
 	public static class LiteNetLib4MirrorClient
 	{
+		/// <summary>
+		/// Use LiteNetLib4MirrorNetworkManager.DisconnectConnection to send the reason
+		/// </summary>
+		public static string LastDisconnectReason;
 		internal static bool IsConnected()
 		{
 			return LiteNetLib4MirrorCore.State == LiteNetLib4MirrorCore.States.ClientConnected || LiteNetLib4MirrorCore.State == LiteNetLib4MirrorCore.States.ClientConnecting;
@@ -44,12 +48,17 @@ namespace Mirror.LiteNetLib4Mirror
 
 		private static void OnPeerConnected(NetPeer peer)
 		{
+			LastDisconnectReason = null;
 			LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.ClientConnected;
 			LiteNetLib4MirrorTransport.Singleton.OnClientConnected.Invoke();
 		}
 
 		private static void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectinfo)
 		{
+			if (disconnectinfo.AdditionalData.TryGetString(out string reason))
+			{
+				LastDisconnectReason = LiteNetLib4MirrorUtils.FromBase64(reason);
+			}
 			LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Idle;
 			LiteNetLib4MirrorCore.LastDisconnectError = disconnectinfo.SocketErrorCode;
 			LiteNetLib4MirrorCore.LastDisconnectReason = disconnectinfo.Reason;

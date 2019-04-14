@@ -206,6 +206,7 @@ namespace LiteNetLib
             _pingPacket = new NetPacket(PacketProperty.Ping, 0) {Sequence = 1};
            
             _unreliableChannel = new SimpleChannel(this);
+            _headChannel = _unreliableChannel;
             _holdedFragments = new Dictionary<ushort, IncomingFragments>();
             
             _channelsCount = netManager.ChannelsCount;
@@ -583,8 +584,7 @@ namespace LiteNetLib
                 NetDebug.Write("Fragment. Id: {0}, Part: {1}, Total: {2}", p.FragmentId, p.FragmentPart, p.FragmentsTotal);
                 //Get needed array from dictionary
                 ushort packetFragId = p.FragmentId;
-                IncomingFragments incomingFragments;
-                if (!_holdedFragments.TryGetValue(packetFragId, out incomingFragments))
+				if (!_holdedFragments.TryGetValue(packetFragId, out IncomingFragments incomingFragments))
                 {
                     incomingFragments = new IncomingFragments
                     {
@@ -594,7 +594,7 @@ namespace LiteNetLib
                 }
 
                 //Cache
-                var fragments = incomingFragments.Fragments;
+                NetPacket[] fragments = incomingFragments.Fragments;
 
                 //Error check
                 if (p.FragmentPart >= fragments.Length || fragments[p.FragmentPart] != null)
@@ -715,7 +715,7 @@ namespace LiteNetLib
 
                 //Send increased packet
                 int newMtu = NetConstants.PossibleMtu[_mtuIdx + 1];
-                var p = _packetPool.GetWithProperty(PacketProperty.MtuCheck, newMtu - NetConstants.HeaderSize);
+                NetPacket p = _packetPool.GetWithProperty(PacketProperty.MtuCheck, newMtu - NetConstants.HeaderSize);
                 FastBitConverter.GetBytes(p.RawData, 1, newMtu);         //place into start
                 FastBitConverter.GetBytes(p.RawData, p.Size - 4, newMtu);//and end of packet
 
@@ -838,9 +838,8 @@ namespace LiteNetLib
                         break;
                     }
                     BaseChannel channel = _channels[packet.ChannelId];
-                    if (channel != null)
-                        channel.ProcessPacket(packet);
-                    break;
+					channel?.ProcessPacket(packet);
+					break;
 
                 case PacketProperty.Channeled:
                     if (packet.ChannelId > _channelsTotalCount)

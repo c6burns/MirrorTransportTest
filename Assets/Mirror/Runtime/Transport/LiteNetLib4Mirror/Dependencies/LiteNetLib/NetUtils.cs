@@ -29,8 +29,7 @@ namespace LiteNetLib
 
         public static IPAddress ResolveAddress(string hostStr)
         {
-            IPAddress ipAddress;
-            if (!IPAddress.TryParse(hostStr, out ipAddress))
+			if (!IPAddress.TryParse(hostStr, out IPAddress ipAddress))
             {
                 if (NetSocket.IPv6Support)
                 {
@@ -66,12 +65,12 @@ namespace LiteNetLib
 
         private static IPAddress[] ResolveAddresses(string hostStr)
         {
-#if NETCORE
+#if NETSTANDARD2_0 || NETCOREAPP2_0
             var hostTask = Dns.GetHostEntryAsync(hostStr);
             hostTask.GetAwaiter().GetResult();
             var host = hostTask.Result;
 #else
-            var host = Dns.GetHostEntry(hostStr);
+            IPHostEntry host = Dns.GetHostEntry(hostStr);
 #endif
             return host.AddressList;
         }
@@ -106,7 +105,7 @@ namespace LiteNetLib
                         ni.OperationalStatus != OperationalStatus.Up)
                         continue;
 
-                    var ipProps = ni.GetIPProperties();
+                    IPInterfaceProperties ipProps = ni.GetIPProperties();
 
                     //Skip address without gateway
                     if (ipProps.GatewayAddresses.Count == 0)
@@ -114,7 +113,7 @@ namespace LiteNetLib
 
                     foreach (UnicastIPAddressInformation ip in ipProps.UnicastAddresses)
                     {
-                        var address = ip.Address;
+                        IPAddress address = ip.Address;
                         if ((ipv4 && address.AddressFamily == AddressFamily.InterNetwork) ||
                             (ipv6 && address.AddressFamily == AddressFamily.InterNetworkV6))
                             targetList.Add(address.ToString());

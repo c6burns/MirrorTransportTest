@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 
@@ -7,7 +7,7 @@ namespace LiteNetLib.Utils
     /// <summary>
     /// Make NTP request.
     /// <para>
-    /// 1. Create the object by <see cref="Create"/> method. 
+    /// 1. Create the object by <see cref="Create(IPEndPoint,Action&lt;NtpPacket&gt;)"/> method. 
     /// </para>
     /// <para>
     /// 2. Use <see cref="Send"/> method to send requests. 3. Call <see cref="Close"/> to release the socket
@@ -29,6 +29,7 @@ namespace LiteNetLib.Utils
         /// <summary>
         /// Initialize object, open socket.
         /// </summary>
+        /// <param name="endPoint">NTP Server endpoint</param>
         /// <param name="onRequestComplete">callback (called from other thread!)</param>
         private NtpRequest(IPEndPoint endPoint, Action<NtpPacket> onRequestComplete)
         {
@@ -37,7 +38,7 @@ namespace LiteNetLib.Utils
 
             // Create and start socket
             _socket = new NetSocket(this);
-            _socket.Bind(IPAddress.Any, IPAddress.IPv6Any, 0, false);
+            _socket.Bind(IPAddress.Any, IPAddress.IPv6Any, 0, false, true);
         }
 
         /// <summary>
@@ -91,10 +92,10 @@ namespace LiteNetLib.Utils
         public void Send()
         {
             SocketError errorCode = 0;
-            var packet = new NtpPacket();
+            NtpPacket packet = new NtpPacket();
             packet.ValidateRequest(); // not necessary
             byte[] sendData = packet.Bytes;
-            var sendCount = _socket.SendTo(sendData, 0, sendData.Length, _ntpEndPoint, ref errorCode);
+            int sendCount = _socket.SendTo(sendData, 0, sendData.Length, _ntpEndPoint, ref errorCode);
             if (errorCode != 0 || sendCount != sendData.Length)
             {
                 _onRequestComplete(null);

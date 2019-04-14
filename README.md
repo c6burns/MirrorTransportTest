@@ -1,17 +1,14 @@
 # Mirror Transport Stress Test
 
-*Note* -- Requires Unity 2018.3.9+
+### Requires Unity 2018.3.9+ ###
 
 **Testing a Transport**
 
 1. Open Build Settings and move the appropriate scene for the correct transport to the top of the list (slot 0).
-
 2. Make sure Server Build is checked.
-
 3. Click Build
 
 To start the build as server, run the EXE with a command line arg of "server".  Without this, the default mode is to run as a headless client.
-
 
 **How it works**
 
@@ -20,7 +17,6 @@ Each client has a SyncVar of a Struct comprised of a message id and a timestamp.
 Additionally, the clients will update the server at the Update Interval with their cummulative stats.
 
 If the Sent Messages List grows too large, the client must assume that either the messages it's sending aren't reaching the server, or the server's messages aren't reaching the client, or the server is unable to get the messages out fast enough to keep up with the clients.  When the Sent Messages List reaches the Backlog Limit, the client will disconnect itself.
-
 
 Based on the Print Interval, the server will output aggregate stats based on what the clients have reported.  Column headings will be repeated every n lines per the Repeat Header Lines value.  Column headings that have "-A" are averages, and those with "-T" are sum totals for all clients.
 

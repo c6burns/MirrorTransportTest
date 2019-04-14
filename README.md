@@ -22,7 +22,7 @@ Based on the Print Interval, the server will output aggregate stats based on wha
 
 **Custom Observers**
 
-If Custom Observers is enabled, the output will include an average number of observers per client.  Obeservers are updated only when a client joins or disconnects based on OverlapSphereNonAlloc and Vector3.Distance based on the Visible Range property of the Area of Interest component and the Layer Mask.  Area of Interest by default is layer masked to the Player layer, which the Player prefab is set for.
+If Custom Observers is enabled, the output will include an average number of observers per client.  Observers are updated only when a client joins or disconnects based on OverlapSphereNonAlloc and Vector3.Distance based on the Visible Range property of the Area of Interest component and the Layer Mask.  Area of Interest by default is layer masked to the Player layer, which the Player prefab is set for.
 
 If Custom Observers is disabled, all clients are observers of all others, which puts the maximum message output load on the server, because for every incoming SyncVar message from any given client, the server must generate an outgoing message to all clients, including the sender.  With 1000 clients, this would produce 1M messages per update loop cycle.
 

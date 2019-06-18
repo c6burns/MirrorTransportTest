@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.Serialization;
 #if UNITY_EDITOR
@@ -39,6 +40,8 @@ namespace Mirror
         public bool hasAuthority { get; private set; }
 
         // <connectionId, NetworkConnection>
+        // null until OnStartServer was called. this is necessary for SendTo...
+        // to work properly in server-only mode.
         public Dictionary<int, NetworkConnection> observers;
 
         public uint netId { get; internal set; }
@@ -217,6 +220,17 @@ namespace Mirror
             return true;
         }
 
+        static uint GetRandomUInt()
+        {
+            // use Crypto RNG to avoid having time based duplicates
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            {
+                byte[] bytes = new byte[4];
+                rng.GetBytes(bytes);
+                return BitConverter.ToUInt32(bytes, 0);
+            }
+        }
+
         // persistent sceneId assignment
         // (because scene objects have no persistent unique ID in Unity)
         //
@@ -270,10 +284,12 @@ namespace Mirror
                 return;
 
             // no valid sceneId yet, or duplicate?
-            NetworkIdentity existing;
-            bool duplicate = sceneIds.TryGetValue(m_SceneId, out existing) && existing != null && existing != this;
+            bool duplicate = sceneIds.TryGetValue(m_SceneId, out NetworkIdentity existing) && existing != null && existing != this;
             if (m_SceneId == 0 || duplicate)
             {
+                // clear in any case, because it might have been a duplicate
+                m_SceneId = 0;
+
                 // if a scene was never opened and we are building it, then a
                 // sceneId would be assigned to build but not saved in editor,
                 // resulting in them getting out of sync.
@@ -293,10 +309,16 @@ namespace Mirror
                 Undo.RecordObject(this, "Generated SceneId");
 
                 // generate random sceneId part (0x00000000FFFFFFFF)
-                // -> exclude '0' because that's for unassigned sceneIDs
-                // TODO use 0,uint.max later. Random.Range only has int version.
-                m_SceneId = (uint)UnityEngine.Random.Range(1, int.MaxValue);
-                Debug.Log(name + " in scene=" + gameObject.scene.name + " sceneId assigned to: " + m_SceneId.ToString("X") + (duplicate ? " because duplicated" : ""));
+                uint randomId = GetRandomUInt();
+
+                // only assign if not a duplicate of an existing scene id
+                // (small chance, but possible)
+                duplicate = sceneIds.TryGetValue(randomId, out existing) && existing != null && existing != this;
+                if (!duplicate)
+                {
+                    m_SceneId = randomId;
+                    //Debug.Log(name + " in scene=" + gameObject.scene.name + " sceneId assigned to: " + m_SceneId.ToString("X"));
+                }
             }
 
             // add to sceneIds dict no matter what
@@ -397,7 +419,7 @@ namespace Mirror
                 }
             }
 
-            if (LogFilter.Debug) Debug.Log("OnStartServer " + this + " GUID:" + netId);
+            if (LogFilter.Debug) Debug.Log("OnStartServer " + this + " NetId:" + netId + " SceneId:" + sceneId);
 
             // add to spawned (note: the original EnableIsServer isn't needed
             // because we already set m_isServer=true above)
@@ -789,6 +811,8 @@ namespace Mirror
             conn.AddToVisList(this);
         }
 
+        static readonly HashSet<NetworkConnection> newObservers = new HashSet<NetworkConnection>();
+
         public void RebuildObservers(bool initialize)
         {
             if (observers == null)
@@ -796,8 +820,8 @@ namespace Mirror
 
             bool changed = false;
             bool result = false;
-            HashSet<NetworkConnection> oldObservers = new HashSet<NetworkConnection>(observers.Values);
-            HashSet<NetworkConnection> newObservers = new HashSet<NetworkConnection>();
+
+            newObservers.Clear();
 
             // call OnRebuildObservers function in components
             foreach (NetworkBehaviour comp in NetworkBehaviours)
@@ -848,7 +872,7 @@ namespace Mirror
                     continue;
                 }
 
-                if (initialize || !oldObservers.Contains(conn))
+                if (initialize || !observers.ContainsKey(conn.connectionId))
                 {
                     // new observer
                     conn.AddToVisList(this);
@@ -857,7 +881,7 @@ namespace Mirror
                 }
             }
 
-            foreach (NetworkConnection conn in oldObservers)
+            foreach (NetworkConnection conn in observers.Values)
             {
                 if (!newObservers.Contains(conn))
                 {
@@ -879,7 +903,12 @@ namespace Mirror
 
             if (changed)
             {
-                observers = newObservers.ToDictionary(conn => conn.connectionId, conn => conn);
+                observers.Clear();
+                foreach (NetworkConnection conn in newObservers)
+                {
+                    if (conn.isReady)
+                        observers.Add(conn.connectionId, conn);
+                }
             }
         }
 

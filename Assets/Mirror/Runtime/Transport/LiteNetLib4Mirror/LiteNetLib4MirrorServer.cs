@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using UnityEngine;
 
 namespace Mirror.LiteNetLib4Mirror
 {
@@ -14,6 +15,11 @@ namespace Mirror.LiteNetLib4Mirror
 		internal static string DisconnectMessage = null;
 		private static readonly NetDataWriter Writer = new NetDataWriter();
 		private static string _lastMessage;
+
+		public static int GetPing(int id)
+		{
+			return Peers[id].Ping;
+		}
 
 		internal static bool IsActive()
 		{
@@ -43,7 +49,7 @@ namespace Mirror.LiteNetLib4Mirror
 					LiteNetLib4MirrorUtils.ForwardPort();
 				}
 #if DISABLE_IPV6
-				LiteNetLib4MirrorCore.Host.Start(LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress), LiteNetLib4MirrorUtils.Parse("::"), LiteNetLib4MirrorTransport.Singleton.port);
+				LiteNetLib4MirrorCore.Host.Start(LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress), IPAddress.IPv6None, LiteNetLib4MirrorTransport.Singleton.port);
 #else
 				LiteNetLib4MirrorCore.Host.Start(LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress), LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress), LiteNetLib4MirrorTransport.Singleton.port);
 #endif
@@ -54,7 +60,7 @@ namespace Mirror.LiteNetLib4Mirror
 			catch (Exception ex)
 			{
 				LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Idle;
-				LiteNetLib4MirrorUtils.LogException(ex);
+				Debug.LogException(ex);
 			}
 		}
 
@@ -73,11 +79,7 @@ namespace Mirror.LiteNetLib4Mirror
 
 		private static void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliverymethod)
 		{
-#if NONALLOC_RECEIVE
-			LiteNetLib4MirrorTransport.Singleton.OnServerDataReceivedNonAlloc.Invoke(peer.Id + 1, reader.GetRemainingBytesSegment());
-#else
-			LiteNetLib4MirrorTransport.Singleton.OnServerDataReceived.Invoke(peer.Id + 1, reader.GetRemainingBytes());
-#endif
+			LiteNetLib4MirrorTransport.Singleton.OnServerDataReceived.Invoke(peer.Id + 1, reader.GetRemainingBytesSegment());
 			reader.Recycle();
 		}
 
@@ -105,7 +107,15 @@ namespace Mirror.LiteNetLib4Mirror
 
 		private static void OnConnectionRequest(ConnectionRequest request)
 		{
-			LiteNetLib4MirrorTransport.Singleton.ProcessConnectionRequest(request, request.Data.PeekString());
+			try
+			{
+				LiteNetLib4MirrorTransport.Singleton.ProcessConnectionRequest(request, request.Data.PeekString());
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError("Malformed join request! Rejecting... Error:" + ex.Message + "\n" + ex.StackTrace);
+				request.Reject();
+			}
 		}
 
 		internal static bool Send(int connectionId, DeliveryMethod method, byte[] data, int start, int length, byte channelNumber)

@@ -1,6 +1,6 @@
 # Mirror Transport Stress Test
 
-*Note* -- Requires Unity 2018.3.9+
+*Note* -- Requires Unity 2018.3.13+
 
 **Testing a Transport**
 

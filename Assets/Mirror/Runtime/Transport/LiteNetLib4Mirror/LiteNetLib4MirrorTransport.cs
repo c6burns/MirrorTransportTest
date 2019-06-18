@@ -30,6 +30,9 @@ namespace Mirror.LiteNetLib4Mirror
 		public bool useUpnP = true;
 		public ushort maxConnections = 20;
 #if !DISABLE_IPV6
+#if UNITY_EDITOR
+		[Rename("IPv6 Enabled")]
+#endif
 		public bool ipv6Enabled = true;
 #endif
 
@@ -66,9 +69,9 @@ namespace Mirror.LiteNetLib4Mirror
 		[Tooltip("If client or server doesn't receive any packet from remote peer during this time then connection will be closed (including library internal keepalive packets)")]
 #endif
 		public int disconnectTimeout = 5000;
-		/// <summary>Delay betwen connection attempts</summary>
+		/// <summary>Delay between connection attempts</summary>
 #if UNITY_EDITOR
-		[Tooltip("Delay betwen connection attempts")]
+		[Tooltip("Delay between connection attempts")]
 #endif
 		public int reconnectDelay = 500;
 		/// <summary>Maximum connection attempts before client stops and call disconnect event.</summary>
@@ -77,9 +80,9 @@ namespace Mirror.LiteNetLib4Mirror
 #endif
 		public int maxConnectAttempts = 10;
 
-		/// <summary>Simulate packet loss by dropping random amout of packets. (Works only in DEBUG mode)</summary>
+		/// <summary>Simulate packet loss by dropping random amount of packets. (Works only in DEBUG mode)</summary>
 #if UNITY_EDITOR
-		[Header("Debug connection tests")][Tooltip("Simulate packet loss by dropping random amout of packets. (Works only in DEBUG mode)")]
+		[Header("Debug connection tests")][Tooltip("Simulate packet loss by dropping random amount of packets. (Works only in DEBUG mode)")]
 #endif
 		public bool simulatePacketLoss;
 		/// <summary>Chance of packet loss when simulation enabled. Value in percents.</summary>
@@ -110,7 +113,7 @@ namespace Mirror.LiteNetLib4Mirror
 		public UnityEventIntError onServerSocketError;
 
 		internal static bool Polling;
-		#region Overridable methods       
+		#region Overridable methods
 		protected internal virtual string GenerateCode()
 		{
 			return LiteNetLib4MirrorUtils.ToBase64(LiteNetLib4MirrorUtils.Concatenate(Application.productName, Application.companyName, Application.unityVersion, LiteNetLib4MirrorCore.TransportVersion, Singleton.authCode));
@@ -177,7 +180,13 @@ namespace Mirror.LiteNetLib4Mirror
 
 		public override bool ClientSend(int channelId, byte[] data)
 		{
-			return LiteNetLib4MirrorClient.Send(channels[channelId], data, 0, data.Length, (byte)channelId);
+			// ReSharper disable once ConvertIfStatementToReturnStatement
+			if (channelId < channels.Length)
+			{
+				return LiteNetLib4MirrorClient.Send(channels[channelId], data, 0, data.Length, (byte)channelId);
+			}
+
+			return LiteNetLib4MirrorClient.Send(channels[0], data, 0, data.Length, 0);
 		}
 
 		public override void ClientDisconnect()
@@ -200,7 +209,12 @@ namespace Mirror.LiteNetLib4Mirror
 
 		public override bool ServerSend(int connectionId, int channelId, byte[] data)
 		{
-			return LiteNetLib4MirrorServer.Send(connectionId, channels[channelId], data, 0, data.Length, (byte)channelId);
+			// ReSharper disable once ConvertIfStatementToReturnStatement
+			if (channelId < channels.Length)
+			{
+				return LiteNetLib4MirrorServer.Send(connectionId, channels[channelId], data, 0, data.Length, (byte)channelId);
+			}
+			return LiteNetLib4MirrorServer.Send(connectionId, channels[0], data, 0, data.Length, 0);
 		}
 
 		public override bool ServerDisconnect(int connectionId)
@@ -237,12 +251,22 @@ namespace Mirror.LiteNetLib4Mirror
 		#region ISegmentTransport
 		public bool ClientSend(int channelId, ArraySegment<byte> data)
 		{
-			return LiteNetLib4MirrorClient.Send(channels[channelId], data.Array, data.Offset, data.Count, (byte)channelId);
+			// ReSharper disable once ConvertIfStatementToReturnStatement
+			if (channelId < channels.Length)
+			{
+				return LiteNetLib4MirrorClient.Send(channels[channelId], data.Array, data.Offset, data.Count, (byte)channelId);
+			}
+			return LiteNetLib4MirrorClient.Send(channels[0], data.Array, data.Offset, data.Count, 0);
 		}
 
 		public bool ServerSend(int connectionId, int channelId, ArraySegment<byte> data)
 		{
-			return LiteNetLib4MirrorServer.Send(connectionId, channels[channelId], data.Array, data.Offset, data.Count, (byte)channelId);
+			// ReSharper disable once ConvertIfStatementToReturnStatement
+			if (channelId < channels.Length)
+			{
+				return LiteNetLib4MirrorServer.Send(connectionId, channels[channelId], data.Array, data.Offset, data.Count, (byte)channelId);
+			}
+			return LiteNetLib4MirrorServer.Send(connectionId, channels[0], data.Array, data.Offset, data.Count, 0);
 		}
 		#endregion
 	}

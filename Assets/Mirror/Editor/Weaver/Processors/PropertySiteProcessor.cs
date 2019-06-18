@@ -1,6 +1,6 @@
 using System;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using Mono.CecilX;
+using Mono.CecilX.Cil;
 
 namespace Mirror.Weaver
 {
@@ -97,7 +97,7 @@ namespace Mirror.Weaver
         {
             if (!Weaver.IsNetworkBehaviour(td))
             {
-                Log.Error("[Server] guard on non-NetworkBehaviour script at [" + md.FullName + "]");
+                Weaver.Error($"[Server] {md} must be declared in a NetworkBehaviour");
                 return;
             }
             ILProcessor worker = md.Body.GetILProcessor();
@@ -119,7 +119,7 @@ namespace Mirror.Weaver
         {
             if (!Weaver.IsNetworkBehaviour(td))
             {
-                Log.Error("[Client] guard on non-NetworkBehaviour script at [" + md.FullName + "]");
+                Weaver.Error($"[Client] {md} must be declared in a NetworkBehaviour");
                 return;
             }
             ILProcessor worker = md.Body.GetILProcessor();
@@ -216,7 +216,7 @@ namespace Mirror.Weaver
             return 1;
         }
 
-        private static int ProcessInstructionLoadAddress(MethodDefinition md, Instruction instr, FieldDefinition opField, int iCount)
+        static int ProcessInstructionLoadAddress(MethodDefinition md, Instruction instr, FieldDefinition opField, int iCount)
         {
             // dont replace property call sites in constructors
             if (md.Name == ".ctor")

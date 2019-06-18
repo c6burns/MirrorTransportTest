@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
-
+using Mono.CecilX;
+using Mono.CecilX.Cil;
 
 namespace Mirror.Weaver
 {
@@ -49,18 +48,13 @@ namespace Mirror.Weaver
                 { Weaver.gameObjectType.FullName, Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "Write", Weaver.gameObjectType) },
                 { Weaver.NetworkIdentityType.FullName, Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "Write", Weaver.NetworkIdentityType) },
                 { Weaver.transformType.FullName, Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "Write", Weaver.transformType) },
-                { "System.Byte[]", Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "WriteBytesAndSize", "System.Byte[]") }
+                { "System.Byte[]", Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "WriteBytesAndSize", "System.Byte[]") },
+                { "System.ArraySegment`1<System.Byte>", Resolvers.ResolveMethodWithArg(networkWriterType, CurrentAssembly, "WriteBytesSegment", "System.ArraySegment`1<System.Byte>") }
             };
         }
 
         public static MethodReference GetWriteFunc(TypeReference variable, int recursionCount = 0)
         {
-            if (recursionCount > MaxRecursionCount)
-            {
-                Weaver.Error("GetWriteFunc recursion depth exceeded for " + variable.Name + ". Check for self-referencing member variables.");
-                return null;
-            }
-
             if (writeFuncs.TryGetValue(variable.FullName, out MethodReference foundFunc))
             {
                 if (foundFunc.Parameters[0].ParameterType.IsArray == variable.IsArray)
@@ -72,7 +66,7 @@ namespace Mirror.Weaver
             if (variable.IsByReference)
             {
                 // error??
-                Weaver.Error("GetWriteFunc variable.IsByReference error.");
+                Weaver.Error($"{variable} has unsupported type. Use one of Mirror supported types instead");
                 return null;
             }
 
@@ -80,13 +74,7 @@ namespace Mirror.Weaver
 
             if (variable.IsArray)
             {
-                TypeReference elementType = variable.GetElementType();
-                MethodReference elemenWriteFunc = GetWriteFunc(elementType, recursionCount + 1);
-                if (elemenWriteFunc == null)
-                {
-                    return null;
-                }
-                newWriterFunc = GenerateArrayWriteFunc(variable, elemenWriteFunc);
+                newWriterFunc = GenerateArrayWriteFunc(variable, recursionCount);
             }
             else if (variable.Resolve().IsEnum)
             {
@@ -117,6 +105,12 @@ namespace Mirror.Weaver
 
         static MethodDefinition GenerateStructWriterFunction(TypeReference variable, int recursionCount)
         {
+            if (recursionCount > MaxRecursionCount)
+            {
+                Weaver.Error($"{variable} can't be serialized because it references itself");
+                return null;
+            }
+
             if (!Weaver.IsValidTypeToGenerate(variable.Resolve()))
             {
                 return null;
@@ -151,13 +145,13 @@ namespace Mirror.Weaver
 
                 if (field.FieldType.Resolve().HasGenericParameters)
                 {
-                    Weaver.Error("WriteReadFunc for " + field.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. Cannot have generic parameters.");
+                    Weaver.Error($"{field} has unsupported type. Create a derived class instead of using generics");
                     return null;
                 }
 
                 if (field.FieldType.Resolve().IsInterface)
                 {
-                    Weaver.Error("WriteReadFunc for " + field.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. Cannot be an interface.");
+                    Weaver.Error($"{field} has unsupported type. Use a concrete class instead of an interface");
                     return null;
                 }
 
@@ -172,25 +166,34 @@ namespace Mirror.Weaver
                 }
                 else
                 {
-                    Weaver.Error("WriteReadFunc for " + field.Name + " type " + field.FieldType + " no supported");
+                    Weaver.Error($"{field} has unsupported type. Use a type supported by Mirror instead");
                     return null;
                 }
             }
             if (fields == 0)
             {
-                Log.Warning("The class / struct " + variable.Name + " has no public or non-static fields to serialize");
+                Log.Warning($" {variable} has no no public or non-static fields to serialize");
             }
             worker.Append(worker.Create(OpCodes.Ret));
             return writerFunc;
         }
 
-        static MethodDefinition GenerateArrayWriteFunc(TypeReference variable, MethodReference elementWriteFunc)
+        static MethodDefinition GenerateArrayWriteFunc(TypeReference variable, int recursionCount)
         {
+
             if (!variable.IsArrayType())
             {
-                Log.Error(variable.FullName + " is an unsupported array type. Jagged and multidimensional arrays are not supported");
+                Weaver.Error($"{variable} is an unsupported type. Jagged and multidimensional arrays are not supported");
                 return null;
             }
+
+            TypeReference elementType = variable.GetElementType();
+            MethodReference elementWriteFunc = GetWriteFunc(elementType, recursionCount + 1);
+            if (elementWriteFunc == null)
+            {
+                return null;
+            }
+
             string functionName = "_WriteArray" + variable.GetElementType().Name + "_";
             if (variable.DeclaringType != null)
             {

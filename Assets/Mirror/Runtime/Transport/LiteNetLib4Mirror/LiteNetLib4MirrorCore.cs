@@ -5,14 +5,14 @@ namespace Mirror.LiteNetLib4Mirror
 {
 	public static class LiteNetLib4MirrorCore
 	{
-		public const string TransportVersion = "1.1.6";
+		public const string TransportVersion = "1.2.2";
 		public static SocketError LastError { get; internal set; }
 		public static SocketError LastDisconnectError { get; internal set; }
 		public static DisconnectReason LastDisconnectReason { get; internal set; }
 		public static NetManager Host { get; internal set; }
 		public static States State { get; internal set; } = States.NonInitialized;
 
-		public enum States
+		public enum States : byte
 		{
 			NonInitialized,
 			Idle,
@@ -82,9 +82,7 @@ namespace Mirror.LiteNetLib4Mirror
 
 		internal static int GetMaxPacketSize(DeliveryMethod channel)
 		{
-			int mtu;
-			if (Host != null && Host.FirstPeer != null) mtu = Host.FirstPeer.Mtu;
-			else mtu = NetConstants.MaxPacketSize;
+			int mtu = Host != null && Host.FirstPeer != null ? Host.FirstPeer.Mtu : NetConstants.MaxPacketSize;
 			switch (channel)
 			{
 				case DeliveryMethod.ReliableOrdered:
@@ -93,6 +91,8 @@ namespace Mirror.LiteNetLib4Mirror
 				case DeliveryMethod.ReliableSequenced:
 				case DeliveryMethod.Sequenced:
 					return mtu - NetConstants.ChanneledHeaderSize;
+				case DeliveryMethod.Unreliable:
+					return mtu - NetConstants.HeaderSize;
 				default:
 					return mtu - NetConstants.HeaderSize;
 			}

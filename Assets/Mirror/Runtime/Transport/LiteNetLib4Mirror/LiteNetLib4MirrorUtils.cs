@@ -19,11 +19,13 @@ namespace Mirror.LiteNetLib4Mirror
 	public static class LiteNetLib4MirrorUtils
 	{
 		internal static ushort LastForwardedPort;
+		internal static readonly string ApplicationName;
 		public static bool UpnpFailed { get; private set; }
+		public static IPAddress ExternalIp { get; private set; }
 
-		public static void LogException(Exception exception)
+		static LiteNetLib4MirrorUtils()
 		{
-			Debug.LogException(exception);
+			ApplicationName = Application.productName;
 		}
 
 		public static string ToBase64(string text)
@@ -50,12 +52,11 @@ namespace Mirror.LiteNetLib4Mirror
 
 		public static NetDataWriter ReusePutDiscovery(NetDataWriter writer, string text, ref string lastText)
 		{
-			if (text != lastText)
+			if (ApplicationName + text != lastText)
 			{
-				string application = Application.productName;
-				lastText = application + text;
+				lastText = ApplicationName + text;
 				writer.Reset();
-				writer.Put(application);
+				writer.Put(ApplicationName);
 				writer.Put(ToBase64(text));
 			}
 
@@ -64,8 +65,8 @@ namespace Mirror.LiteNetLib4Mirror
 
 		public static string Concatenate(params string[] array)
 		{
-			StringBuilder sb = new StringBuilder();
-			for (int index = 0; index < array.Length; index++) sb.Append(array[index]);
+			StringBuilder sb = new StringBuilder(array[0]);
+			for (int index = 1; index < array.Length; index++) sb.Append(array[index]);
 
 			return sb.ToString();
 		}
@@ -87,12 +88,40 @@ namespace Mirror.LiteNetLib4Mirror
 					return IPAddress.IPv6Loopback;
 			}
 
-			return IPAddress.TryParse(address, out IPAddress ipAddress) ? ipAddress : Dns.GetHostAddresses(address)[0];
+			if (IPAddress.TryParse(address, out IPAddress ipAddress))
+			{
+				return ipAddress;
+			}
+
+			IPAddress[] addresses = Dns.GetHostAddresses(address);
+#if DISABLE_IPV6
+			return FirstAddressOfType(addresses, AddressFamily.InterNetwork) ?? addresses[0];
+#else
+			if (LiteNetLib4MirrorTransport.Singleton.ipv6Enabled)
+			{
+				return (FirstAddressOfType(addresses, AddressFamily.InterNetworkV6) ?? FirstAddressOfType(addresses, AddressFamily.InterNetwork)) ?? addresses[0];
+			}
+
+			return FirstAddressOfType(addresses, AddressFamily.InterNetwork) ?? addresses[0];
+#endif
 		}
 
 		public static IPEndPoint Parse(string address, ushort port)
 		{
 			return new IPEndPoint(Parse(address), port);
+		}
+
+		private static IPAddress FirstAddressOfType(IPAddress[] addresses, AddressFamily type)
+		{
+			for (int i = 0; i < addresses.Length; i++)
+			{
+				IPAddress address = addresses[i];
+				if (address.AddressFamily == type)
+				{
+					return address;
+				}
+			}
+			return null;
 		}
 
 		/// <summary>
@@ -125,24 +154,22 @@ namespace Mirror.LiteNetLib4Mirror
 			try
 			{
 				if (LastForwardedPort == port || UpnpFailed) return;
-				if (LastForwardedPort != 0)
-				{
-					NatDiscoverer.ReleaseAll();
-				}
+				if (LastForwardedPort != 0) NatDiscoverer.ReleaseAll();
 				NatDiscoverer discoverer = new NatDiscoverer();
 				NatDevice device;
 				using (CancellationTokenSource cts = new CancellationTokenSource(milisecondsDelay))
 				{
-					device = await discoverer.DiscoverDeviceAsync(PortMapper.Upnp, cts).ConfigureAwait(false);
+					device = await discoverer.DiscoverDeviceAsync(PortMapper.Upnp | PortMapper.Pmp, cts).ConfigureAwait(false);
 				}
 
-				await device.CreatePortMapAsync(new Mapping(networkProtocolType, port, port, "LiteNetLib4Mirror UPnP")).ConfigureAwait(false);
+				ExternalIp = await device.GetExternalIPAsync();
+				await device.CreatePortMapAsync(new Mapping(networkProtocolType, ExternalIp ?? IPAddress.None, port, port, 0, ApplicationName)).ConfigureAwait(false);
 				LastForwardedPort = port;
-				Debug.Log("Port forwarded successfully!");
+				Debug.Log($"Port {port.ToString()} forwarded successfully!");
 			}
-			catch
+			catch (Exception ex)
 			{
-				Debug.LogWarning("UPnP failed!");
+				Debug.LogWarning($"UPnP failed!\n{ex.Message}\n{ex.StackTrace}");
 				UpnpFailed = true;
 			}
 		}

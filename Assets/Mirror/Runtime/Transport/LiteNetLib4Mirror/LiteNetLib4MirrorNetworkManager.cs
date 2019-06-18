@@ -31,7 +31,6 @@ namespace Mirror.LiteNetLib4Mirror
 			LiteNetLib4MirrorTransport.Singleton.clientAddress = ip;
 			LiteNetLib4MirrorTransport.Singleton.port = port;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = 2;
-			maxConnections = 2;
 			StartClient();
 		}
 
@@ -66,7 +65,6 @@ namespace Mirror.LiteNetLib4Mirror
 #endif
 			LiteNetLib4MirrorTransport.Singleton.port = port;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-			maxConnections = maxPlayers;
 			StartHost();
 		}
 
@@ -101,7 +99,6 @@ namespace Mirror.LiteNetLib4Mirror
 #endif
 			LiteNetLib4MirrorTransport.Singleton.port = port;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-			maxConnections = maxPlayers;
 			return StartServer();
 		}
 
@@ -121,7 +118,6 @@ namespace Mirror.LiteNetLib4Mirror
 #endif
 			LiteNetLib4MirrorTransport.Singleton.port = port;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-			maxConnections = maxPlayers;
 			StartHost();
 		}
 
@@ -140,11 +136,10 @@ namespace Mirror.LiteNetLib4Mirror
 #endif
 			LiteNetLib4MirrorTransport.Singleton.port = port;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-			maxConnections = maxPlayers;
 			return StartServer();
 		}
 
-		public void DisconnectConnection(NetworkConnection conn, string message)
+		public void DisconnectConnection(NetworkConnection conn, string message = null)
 		{
 			LiteNetLib4MirrorServer.DisconnectMessage = message;
 			conn.Disconnect();

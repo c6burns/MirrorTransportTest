@@ -60,6 +60,7 @@ namespace LiteNetLib
         private readonly NetPacketPool _packetPool;
         private readonly object _flushLock = new object();
         private readonly object _sendLock = new object();
+        private readonly object _shutdownLock = new object();
 
         internal NetPeer NextPeer;
         internal NetPeer PrevPeer;
@@ -80,6 +81,8 @@ namespace LiteNetLib
         private readonly SimpleChannel _unreliableChannel;
         private readonly BaseChannel[] _channels;
         private BaseChannel _headChannel;
+        private readonly byte _channelsCount;
+        private readonly int _channelsTotalCount;
 
         //MTU
         private int _mtu = NetConstants.PossibleMtu[0];
@@ -188,9 +191,6 @@ namespace LiteNetLib
         /// Statistics of peer connection
         /// </summary>
         public readonly NetStatistics Statistics;
-
-        private readonly byte _channelsCount;
-        private readonly int _channelsTotalCount;
 
         //incoming connection constructor
         internal NetPeer(NetManager netManager, IPEndPoint remoteEndPoint, int id)
@@ -530,7 +530,7 @@ namespace LiteNetLib
 
         internal bool Shutdown(byte[] data, int start, int length, bool force)
         {
-            lock (this)
+            lock (_shutdownLock)
             {
                 //trying to shutdown already disconnected
                 if (_connectionState == ConnectionState.Disconnected ||
@@ -584,7 +584,8 @@ namespace LiteNetLib
                 NetDebug.Write("Fragment. Id: {0}, Part: {1}, Total: {2}", p.FragmentId, p.FragmentPart, p.FragmentsTotal);
                 //Get needed array from dictionary
                 ushort packetFragId = p.FragmentId;
-				if (!_holdedFragments.TryGetValue(packetFragId, out IncomingFragments incomingFragments))
+                IncomingFragments incomingFragments;
+                if (!_holdedFragments.TryGetValue(packetFragId, out incomingFragments))
                 {
                     incomingFragments = new IncomingFragments
                     {
@@ -594,7 +595,7 @@ namespace LiteNetLib
                 }
 
                 //Cache
-                NetPacket[] fragments = incomingFragments.Fragments;
+                var fragments = incomingFragments.Fragments;
 
                 //Error check
                 if (p.FragmentPart >= fragments.Length || fragments[p.FragmentPart] != null)
@@ -715,7 +716,7 @@ namespace LiteNetLib
 
                 //Send increased packet
                 int newMtu = NetConstants.PossibleMtu[_mtuIdx + 1];
-                NetPacket p = _packetPool.GetWithProperty(PacketProperty.MtuCheck, newMtu - NetConstants.HeaderSize);
+                var p = _packetPool.GetWithProperty(PacketProperty.MtuCheck, newMtu - NetConstants.HeaderSize);
                 FastBitConverter.GetBytes(p.RawData, 1, newMtu);         //place into start
                 FastBitConverter.GetBytes(p.RawData, p.Size - 4, newMtu);//and end of packet
 
@@ -838,8 +839,9 @@ namespace LiteNetLib
                         break;
                     }
                     BaseChannel channel = _channels[packet.ChannelId];
-					channel?.ProcessPacket(packet);
-					break;
+                    if (channel != null)
+                        channel.ProcessPacket(packet);
+                    break;
 
                 case PacketProperty.Channeled:
                     if (packet.ChannelId > _channelsTotalCount)

@@ -22,6 +22,11 @@ namespace Mirror
             reader = new BinaryReader(new MemoryStream(buffer, false), encoding);
         }
 
+        public NetworkReader(ArraySegment<byte> buffer)
+        {
+            reader = new BinaryReader(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, false), encoding);
+        }
+
         // 'int' is the best type for .Position. 'short' is too small if we send >32kb which would result in negative .Position
         // -> converting long to int is fine until 2GB of data (MAX_INT), so we don't have to worry about overflows here
         public int Position { get { return (int)reader.BaseStream.Position; }  set { reader.BaseStream.Position = value; } }
@@ -55,6 +60,7 @@ namespace Mirror
         // Use checked() to force it to throw OverflowException if data is invalid
         // null support, see NetworkWriter
         public byte[] ReadBytesAndSize() => ReadBoolean() ? ReadBytes(checked((int)ReadPackedUInt32())) : null;
+        public ArraySegment<byte> ReadBytesSegment() => new ArraySegment<byte>(ReadBytesAndSize());
 
         // zigzag decoding https://gist.github.com/mfuerstenau/ba870a29e16536fdbaba
         public int ReadPackedInt32()

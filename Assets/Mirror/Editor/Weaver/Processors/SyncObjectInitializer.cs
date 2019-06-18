@@ -1,8 +1,8 @@
 // SyncObject code
 using System;
 using System.Linq;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
+using Mono.CecilX;
+using Mono.CecilX.Cil;
 
 namespace Mirror.Weaver
 {
@@ -44,7 +44,7 @@ namespace Mirror.Weaver
             }
             catch (Exception)
             {
-                Weaver.Error("Missing parameter-less constructor for:" + fd.FieldType.Name);
+                Weaver.Error($"{fd} does not have a default constructor");
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace Mirror.Weaver
             // generates code like:
             this.InitSyncObject(m_sizes);
         */
-        private static void GenerateSyncObjectRegistration(ILProcessor methodWorker, FieldDefinition fd)
+        static void GenerateSyncObjectRegistration(ILProcessor methodWorker, FieldDefinition fd)
         {
             methodWorker.Append(methodWorker.Create(OpCodes.Ldarg_0));
             methodWorker.Append(methodWorker.Create(OpCodes.Ldarg_0));

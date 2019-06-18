@@ -122,7 +122,6 @@ GameObject:
   m_Component:
   - component: {fileID: 976758168}
   - component: {fileID: 976758169}
-  - component: {fileID: 976758170}
   - component: {fileID: 976758167}
   - component: {fileID: 976758166}
   m_Layer: 0
@@ -152,12 +151,12 @@ MonoBehaviour:
   OnClientDataReceived:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventByteArray, Mirror, Version=1.0.0.0, Culture=neutral,
+    m_TypeName: Mirror.UnityEventByteArray, Mirror, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   OnClientError:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventException, Mirror, Version=1.0.0.0, Culture=neutral,
+    m_TypeName: Mirror.UnityEventException, Mirror, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   OnClientDisconnected:
     m_PersistentCalls:
@@ -167,27 +166,28 @@ MonoBehaviour:
   OnServerConnected:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventInt, Mirror, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+    m_TypeName: Mirror.UnityEventInt, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   OnServerDataReceived:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventIntByteArray, Mirror, Version=1.0.0.0, Culture=neutral,
+    m_TypeName: Mirror.UnityEventIntByteArray, Mirror, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   OnServerError:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventIntException, Mirror, Version=1.0.0.0, Culture=neutral,
+    m_TypeName: Mirror.UnityEventIntException, Mirror, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
   OnServerDisconnected:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.UnityEventInt, Mirror, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+    m_TypeName: Mirror.UnityEventInt, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   clientAddress: 127.0.0.1
   serverIPv4BindAddress: 0.0.0.0
   serverIPv6BindAddress: '::'
   port: 7777
   useUpnP: 1
   maxConnections: 10000
+  ipv6Enabled: 1
   channels: 0300000000000000020000000400000001000000
   authCode: 
   updateTime: 15
@@ -203,12 +203,12 @@ MonoBehaviour:
   onClientSocketError:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.LiteNetLib4Mirror.UnityEventError, Mirror, Version=1.0.0.0,
+    m_TypeName: Mirror.LiteNetLib4Mirror.UnityEventError, Mirror, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
   onServerSocketError:
     m_PersistentCalls:
       m_Calls: []
-    m_TypeName: Mirror.LiteNetLib4Mirror.UnityEventIntError, Mirror, Version=1.0.0.0,
+    m_TypeName: Mirror.LiteNetLib4Mirror.UnityEventIntError, Mirror, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &976758167
 MonoBehaviour:
@@ -219,7 +219,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 976758165}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fec9e2bec53e764c9a71da806febacf, type: 3}
+  m_Script: {fileID: 11500000, guid: dc0157898360cc54ebb03ac2a57e442f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 0
@@ -268,18 +268,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   manager: {fileID: 976758167}
---- !u!114 &976758170
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976758165}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6442dc8070ceb41f094e44de0bf87274, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  showGUI: 1
-  offsetX: 0
-  offsetY: 0

@@ -19,6 +19,7 @@ namespace LiteNetLib
 
     internal sealed class NetSocket
     {
+        public const int ReceivePollingTime = 1000000; //1 second
         private Socket _udpSocketv4;
         private Socket _udpSocketv6;
         private Thread _threadv4;
@@ -40,7 +41,7 @@ namespace LiteNetLib
         {
 #if DISABLE_IPV6 || (!UNITY_EDITOR && ENABLE_IL2CPP && !UNITY_2018_3_OR_NEWER)
             IPv6Support = false;
-#elif !UNITY_EDITOR && ENABLE_IL2CPP && UNITY_2018_3_OR_NEWER
+#elif !UNITY_2019_1_OR_NEWER && !UNITY_2018_4_OR_NEWER && (!UNITY_EDITOR && ENABLE_IL2CPP && UNITY_2018_3_OR_NEWER)
             string version = UnityEngine.Application.unityVersion;
             IPv6Support = Socket.OSSupportsIPv6 && int.Parse(version.Remove(version.IndexOf('f')).Split('.')[2]) >= 6;
 #elif UNITY_2018_2_OR_NEWER
@@ -72,7 +73,7 @@ namespace LiteNetLib
                 //Reading data
                 try
                 {
-                    if (socket.Available == 0 && !socket.Poll(5000, SelectMode.SelectRead))
+                    if (socket.Available == 0 && !socket.Poll(ReceivePollingTime, SelectMode.SelectRead))
                         continue;
                     result = socket.ReceiveFrom(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None,
                         ref bufferEndPoint);
@@ -82,6 +83,7 @@ namespace LiteNetLib
                     switch (ex.SocketErrorCode)
                     {
                         case SocketError.Interrupted:
+                        case SocketError.NotSocket:
                             return;
                         case SocketError.ConnectionReset:
                         case SocketError.MessageSize:
@@ -227,10 +229,11 @@ namespace LiteNetLib
 
         public bool SendBroadcast(byte[] data, int offset, int size, int port)
         {
-            bool success;
+            bool broadcastSuccess;
+            bool multicastSuccess = false;
             try
             {
-                success = _udpSocketv4.SendTo(
+                broadcastSuccess = _udpSocketv4.SendTo(
                              data,
                              offset,
                              size,
@@ -239,12 +242,12 @@ namespace LiteNetLib
            
                 if (IPv6Support)
                 {
-                    success = success || _udpSocketv6.SendTo(
-                                 data,
-                                 offset,
-                                 size,
-                                 SocketFlags.None,
-                                 new IPEndPoint(MulticastAddressV6, port)) > 0;
+                    multicastSuccess = _udpSocketv6.SendTo(
+                                                data,
+                                                offset,
+                                                size,
+                                                SocketFlags.None,
+                                                new IPEndPoint(MulticastAddressV6, port)) > 0;
                 }
             }
             catch (Exception ex)
@@ -252,14 +255,14 @@ namespace LiteNetLib
                 NetDebug.WriteError("[S][MCAST]" + ex);
                 return false;
             }
-            return success;
+            return broadcastSuccess || multicastSuccess;
         }
 
         public int SendTo(byte[] data, int offset, int size, IPEndPoint remoteEndPoint, ref SocketError errorCode)
         {
             try
             {
-                Socket socket = _udpSocketv4;
+                var socket = _udpSocketv4;
                 if (remoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6 && IPv6Support)
                     socket = _udpSocketv6;
                 int result = socket.SendTo(data, offset, size, SocketFlags.None, remoteEndPoint);

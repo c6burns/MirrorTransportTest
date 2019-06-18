@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using LiteNetLib;
+using UnityEngine;
 
 namespace Mirror.LiteNetLib4Mirror
 {
@@ -10,7 +11,13 @@ namespace Mirror.LiteNetLib4Mirror
 		/// <summary>
 		/// Use LiteNetLib4MirrorNetworkManager.DisconnectConnection to send the reason
 		/// </summary>
-		public static string LastDisconnectReason;
+		public static string LastDisconnectReason { get; private set; }
+
+		public static int GetPing()
+		{
+			return LiteNetLib4MirrorCore.Host.FirstPeer.Ping;
+		}
+
 		internal static bool IsConnected()
 		{
 			return LiteNetLib4MirrorCore.State == LiteNetLib4MirrorCore.States.ClientConnected || LiteNetLib4MirrorCore.State == LiteNetLib4MirrorCore.States.ClientConnecting;
@@ -42,7 +49,7 @@ namespace Mirror.LiteNetLib4Mirror
 			catch (Exception ex)
 			{
 				LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Idle;
-				LiteNetLib4MirrorUtils.LogException(ex);
+				Debug.LogException(ex);
 			}
 		}
 
@@ -55,9 +62,13 @@ namespace Mirror.LiteNetLib4Mirror
 
 		private static void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectinfo)
 		{
-			if (disconnectinfo.AdditionalData.TryGetString(out string reason))
+			if (disconnectinfo.AdditionalData.TryGetString(out string reason) && !string.IsNullOrWhiteSpace(reason))
 			{
 				LastDisconnectReason = LiteNetLib4MirrorUtils.FromBase64(reason);
+			}
+			else
+			{
+				LastDisconnectReason = null;
 			}
 			LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Idle;
 			LiteNetLib4MirrorCore.LastDisconnectError = disconnectinfo.SocketErrorCode;
@@ -68,11 +79,7 @@ namespace Mirror.LiteNetLib4Mirror
 
 		private static void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliverymethod)
 		{
-#if NONALLOC_RECEIVE
-			LiteNetLib4MirrorTransport.Singleton.OnClientDataReceivedNonAlloc.Invoke(reader.GetRemainingBytesSegment());
-#else
-			LiteNetLib4MirrorTransport.Singleton.OnClientDataReceived.Invoke(reader.GetRemainingBytes());
-#endif
+			LiteNetLib4MirrorTransport.Singleton.OnClientDataReceived.Invoke(reader.GetRemainingBytesSegment());
 			reader.Recycle();
 		}
 

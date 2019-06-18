@@ -38,14 +38,17 @@ namespace Mirror
         {
             ReadyToBegin = ReadyState;
             NetworkLobbyManager lobby = NetworkManager.singleton as NetworkLobbyManager;
-            lobby?.ReadyStatusChanged();
+            if (lobby != null)
+            {
+                lobby.ReadyStatusChanged();
+            }
         }
 
         #endregion
 
         #region SyncVar Hooks
 
-        private void ReadyStateChanged(bool NewReadyState)
+        void ReadyStateChanged(bool NewReadyState)
         {
             OnClientReady(ReadyToBegin);
         }

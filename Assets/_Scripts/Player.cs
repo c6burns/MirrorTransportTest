@@ -43,7 +43,13 @@ namespace TransportStress
             {
                 // This can be true if server double-sends SyncVar or if messages are not ack'ed and resent from server
                 if (!SentMessages.Contains(receivedData))
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("Unknown Msg: {0} {1}", receivedData.messages, receivedData.timestamp);
+                    Console.ResetColor();
+
                     unknownMessages += 1;
+                }
 
                 // This should only be possible with unordered channels in some transports
                 if (SentMessages.IndexOf(receivedData) > 0)

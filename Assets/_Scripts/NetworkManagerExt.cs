@@ -84,9 +84,9 @@ namespace TransportStress
                     Console.WriteLine();
 
                     if (customObservers)
-                        Console.WriteLine("Clients    Obs-A       Sent       Rcvd      Unks     OOOs   Pends-A    Delta-T    Delta-A");
+                        Console.WriteLine("Clients    Obs-A       Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                     else
-                        Console.WriteLine("Clients      Sent       Rcvd      Unks     OOOs   Pends-A    Delta-T    Delta-A");
+                        Console.WriteLine("Clients      Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                 }
 
                 long observers = 0;

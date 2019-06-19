@@ -16,16 +16,16 @@ namespace TransportStress
             {
                 foreach (string arg in Environment.GetCommandLineArgs())
                 {
-                    if (arg == "server")
+                    if (arg == "client")
                     {
-                        manager.StartServer();
+                        Application.targetFrameRate = 30;
+                        manager.StartClient();
                         return;
                     }
                 }
 
-                // no startup argument found...assume client
-                Application.targetFrameRate = 30;
-                manager.StartClient();
+                // no startup argument found...assume server
+                manager.StartServer();
             }
         }
     }

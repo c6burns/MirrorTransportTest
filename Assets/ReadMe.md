@@ -10,7 +10,7 @@
 
 3. Click Build
 
-To start the build as server, run the EXE with a command line arg of "server".  Without this, the default mode is to run as a headless client.
+To start the build as client, run the EXE with a command line arg of "client".  Without this, the default mode is to run as a headless server.
 
 
 **How it works**

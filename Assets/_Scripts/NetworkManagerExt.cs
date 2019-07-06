@@ -58,7 +58,25 @@ namespace TransportStress
             clientStats.Remove(conn);
 
             Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine("OnServerDisconnect ID: {0}", conn.connectionId);
+            Console.WriteLine("OnServerDisconnect: ID {0}", conn.connectionId);
+            Console.ResetColor();
+        }
+
+        public override void OnClientConnect(NetworkConnection conn)
+        {
+            base.OnClientConnect(conn);
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("OnClientConnect: {0}", conn.address);
+            Console.ResetColor();
+        }
+
+        public override void OnClientError(NetworkConnection conn, int errorCode)
+        {
+            base.OnClientError(conn, errorCode);
+
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("OnClientError: Error Code {1}", errorCode);
             Console.ResetColor();
         }
 

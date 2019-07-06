@@ -44,7 +44,7 @@ namespace TransportStress
                 // This can be true if server double-sends SyncVar or if messages are not ack'ed and resent from server
                 if (!SentMessages.Contains(receivedData))
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
                     Console.WriteLine("Unknown Msg: {0} {1}", receivedData.messages, receivedData.timestamp);
                     Console.ResetColor();
 
@@ -77,7 +77,7 @@ namespace TransportStress
                 {
                     shuttingDown = true;
 
-                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine("Excessive message backlog detected ({0}) -- Shutting down", SentMessages.Count);
                     Console.ResetColor();
 

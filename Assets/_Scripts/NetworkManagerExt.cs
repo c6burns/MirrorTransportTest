@@ -62,6 +62,15 @@ namespace TransportStress
             Console.ResetColor();
         }
 
+        public override void OnClientDisconnect(NetworkConnection conn)
+        {
+            base.OnClientDisconnect(conn);
+
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine("OnClientDisconnect");
+            Console.ResetColor();
+        }
+
         public override void Start()
         {
             base.Start();

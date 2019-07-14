@@ -63,9 +63,40 @@ namespace TransportStress
             Console.ResetColor();
         }
 
+        //public override void Start()
+        //{
+        //    base.Start();
+        //    Resources.UnloadUnusedAssets();
+        //}
+
         public override void Start()
         {
-            base.Start();
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                // After 5 seconds, UnloadUnusedAssets
+                Invoke(nameof(UnloadAssets), 5);
+
+                foreach (string arg in Environment.GetCommandLineArgs())
+                {
+                    if (arg == "client")
+                    {
+                        Application.targetFrameRate = 30;
+                        StartClient();
+                        return;
+                    }
+                }
+
+                // no startup argument found...assume server
+                StartServer();
+            }
+        }
+
+        void UnloadAssets()
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("Unloading unused assets");
+            Console.ResetColor();
+
             Resources.UnloadUnusedAssets();
         }
 

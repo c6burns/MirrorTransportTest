@@ -98,24 +98,25 @@ namespace TransportStress
 
                 string[] args = Environment.GetCommandLineArgs();
 
-                if (args.Length == 0)
+                if (args.Length == 1)
                 {
                     StartServer();
                     return;
                 }
-                else if (args[1] == "client" && args.Length == 1)
+                else if (args[1] == "client" && args.Length == 2)
                 {
                     Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }
-                else if (args[1] == "client" && args.Length == 2)
+                else if (args[1] == "client" && args.Length == 3)
                 {
                     networkAddress = args[2];
+                    Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }
-                else if (args[1] == "client" && args.Length == 3)
+                else if (args[1] == "client" && args.Length == 4)
                 {
                     networkAddress = args[2];
 
@@ -125,6 +126,7 @@ namespace TransportStress
                     var ignorance = Transport.activeTransport as Ignorance;
                     if (ignorance != null) int.TryParse(args[3], out ignorance.CommunicationPort);
 
+                    Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }

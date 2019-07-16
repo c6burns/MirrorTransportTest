@@ -63,12 +63,6 @@ namespace TransportStress
             Console.ResetColor();
         }
 
-        //public override void Start()
-        //{
-        //    base.Start();
-        //    Resources.UnloadUnusedAssets();
-        //}
-
         public override void Start()
         {
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
@@ -83,24 +77,24 @@ namespace TransportStress
                     StartServer();
                     return;
                 }
-                else if (args[0] == "client" && args.Length == 1)
+                else if (args[1] == "client" && args.Length == 1)
                 {
                     Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }
-                else if (args[0] == "client" && args.Length == 2)
+                else if (args[1] == "client" && args.Length == 2)
                 {
-                    networkAddress = args[1];
+                    networkAddress = args[2];
                     StartClient();
                     return;
                 }
-                else if (args[0] == "client" && args.Length == 3)
+                else if (args[1] == "client" && args.Length == 3)
                 {
-                    networkAddress = args[1];
+                    networkAddress = args[2];
 
                     var liteNet = Transport.activeTransport as LiteNetLib4MirrorTransport;
-                    if (liteNet != null) ushort.TryParse(args[2], out liteNet.port);
+                    if (liteNet != null) ushort.TryParse(args[3], out liteNet.port);
 
                     StartClient();
                     return;

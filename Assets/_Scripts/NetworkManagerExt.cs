@@ -102,17 +102,40 @@ namespace TransportStress
                 // After 5 seconds, UnloadUnusedAssets
                 Invoke(nameof(UnloadAssets), 5);
 
-                foreach (string arg in Environment.GetCommandLineArgs())
+                string[] args = Environment.GetCommandLineArgs();
+
+                if (args.Length == 0)
                 {
-                    if (arg == "client")
-                    {
-                        Application.targetFrameRate = 30;
-                        StartClient();
-                        return;
-                    }
+                    StartServer();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 1)
+                {
+                    Application.targetFrameRate = 30;
+                    StartClient();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 2)
+                {
+                    networkAddress = args[1];
+                    StartClient();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 3)
+                {
+                    networkAddress = args[1];
+
+                    var telepathy = Transport.activeTransport as TelepathyTransport;
+                    if (telepathy != null) ushort.TryParse(args[2], out telepathy.port);
+
+                    var ignorance = Transport.activeTransport as Ignorance;
+                    if (ignorance != null) int.TryParse(args[2], out ignorance.CommunicationPort);
+
+                    StartClient();
+                    return;
                 }
 
-                // no startup argument found...assume server
+                // invalid startup arguments...assume server
                 StartServer();
             }
         }

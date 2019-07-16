@@ -76,17 +76,37 @@ namespace TransportStress
                 // After 5 seconds, UnloadUnusedAssets
                 Invoke(nameof(UnloadAssets), 5);
 
-                foreach (string arg in Environment.GetCommandLineArgs())
+                string[] args = Environment.GetCommandLineArgs();
+
+                if (args.Length == 0)
                 {
-                    if (arg == "client")
-                    {
-                        Application.targetFrameRate = 30;
-                        StartClient();
-                        return;
-                    }
+                    StartServer();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 1)
+                {
+                    Application.targetFrameRate = 30;
+                    StartClient();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 2)
+                {
+                    networkAddress = args[1];
+                    StartClient();
+                    return;
+                }
+                else if (args[0] == "client" && args.Length == 3)
+                {
+                    networkAddress = args[1];
+
+                    var liteNet = Transport.activeTransport as LiteNetLib4MirrorTransport;
+                    if (liteNet != null) ushort.TryParse(args[2], out liteNet.port);
+
+                    StartClient();
+                    return;
                 }
 
-                // no startup argument found...assume server
+                // invalid startup arguments...assume server
                 StartServer();
             }
         }

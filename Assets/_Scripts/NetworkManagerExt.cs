@@ -151,9 +151,14 @@ namespace TransportStress
 
         void Update()
         {
-            if (NetworkServer.active && clientStats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
+            if (!NetworkServer.active) return;
+
+            if (clientStats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
             {
                 lastPrintStats = stopwatch.ElapsedMilliseconds;
+
+                if (inputBuffer.Length > 0)
+                    Console.WriteLine();
 
                 if (printedLines % repeatHeadersLines == 0)
                 {
@@ -199,7 +204,56 @@ namespace TransportStress
                     Console.WriteLine("  {0:0000}     {1:0000000}    {2:0000000}    {3:00000}    {4:00000}    {5:00000}    {6:000000000}    {7:00000}", clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
 
                 printedLines += 1;
+
+                if (inputBuffer.Length > 0)
+                {
+                    Console.Write(inputBuffer);
+                }
             }
+
+            if (Console.KeyAvailable) GetInput();
+        }
+
+        string inputBuffer = "";
+
+        void GetInput()
+        {
+            ConsoleKeyInfo consoleKeyInfo = Console.ReadKey();
+            switch (consoleKeyInfo.Key)
+            {
+                case ConsoleKey.Backspace:
+                    if (inputBuffer.Length > 0)
+                    {
+                        // Delete the character (backspace + space + backspace)
+                        Console.Write("\b \b");
+                        inputBuffer = inputBuffer.Substring(0, inputBuffer.Length - 1);
+                    }
+                    break;
+                case ConsoleKey.Enter:
+                    if (inputBuffer.Length > 0)
+                    {
+                        Console.WriteLine();
+                        inputBuffer = inputBuffer.Trim();
+                        ProcessInput();
+                        inputBuffer = "";
+                    }
+                    break;
+                default:
+                    // Restrict to ASCII printable characters by matching range from space through tilde
+                    if (System.Text.RegularExpressions.Regex.IsMatch(consoleKeyInfo.KeyChar.ToString(), @"[ -~]"))
+                    {
+                        Console.Write(consoleKeyInfo.KeyChar);
+                        inputBuffer += consoleKeyInfo.KeyChar;
+                    }
+                    break;
+            }
+        }
+
+        void ProcessInput()
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("You entered {0}", inputBuffer);
+            Console.ResetColor();
         }
     }
 }

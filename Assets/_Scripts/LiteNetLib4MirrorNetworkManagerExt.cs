@@ -63,6 +63,33 @@ namespace TransportStress
             Console.ResetColor();
         }
 
+        public override void OnClientConnect(NetworkConnection conn)
+        {
+            base.OnClientConnect(conn);
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("OnClientConnect: {0}", conn.address);
+            Console.ResetColor();
+        }
+
+        public override void OnClientError(NetworkConnection conn, int errorCode)
+        {
+            base.OnClientError(conn, errorCode);
+
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("OnClientError: Error Code {1}", errorCode);
+            Console.ResetColor();
+        }
+
+        public override void OnClientDisconnect(NetworkConnection conn)
+        {
+            base.OnClientDisconnect(conn);
+
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine("OnClientDisconnect");
+            Console.ResetColor();
+        }
+
         public override void Start()
         {
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
@@ -86,6 +113,7 @@ namespace TransportStress
                 else if (args[1] == "client" && args.Length == 3)
                 {
                     networkAddress = args[2];
+                    Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }
@@ -96,6 +124,7 @@ namespace TransportStress
                     var liteNet = Transport.activeTransport as LiteNetLib4MirrorTransport;
                     if (liteNet != null) ushort.TryParse(args[3], out liteNet.port);
 
+                    Application.targetFrameRate = 30;
                     StartClient();
                     return;
                 }
@@ -120,9 +149,14 @@ namespace TransportStress
 
         void Update()
         {
-            if (NetworkServer.active && clientStats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
+            if (!NetworkServer.active) return;
+
+            if (clientStats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
             {
                 lastPrintStats = stopwatch.ElapsedMilliseconds;
+
+                if (inputBuffer.Length > 0)
+                    Console.WriteLine();
 
                 if (printedLines % repeatHeadersLines == 0)
                 {
@@ -130,9 +164,9 @@ namespace TransportStress
                     Console.WriteLine();
 
                     if (customObservers)
-                        Console.WriteLine("Clients    Obs-A       Sent       Rcvd      Unks     OOOs   Pends-A    Delta-T    Delta-A");
+                        Console.WriteLine("Time   Clients    Obs-A       Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                     else
-                        Console.WriteLine("Clients      Sent       Rcvd      Unks     OOOs   Pends-A    Delta-T    Delta-A");
+                        Console.WriteLine("Time   Clients      Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                 }
 
                 long observers = 0;
@@ -162,13 +196,64 @@ namespace TransportStress
                 if (clientStats.Count > 0)
                     avgPendingMsgs = pendingMessages / clientStats.Count;
 
+                string timeStamp = string.Format("{0:00}:{1:00}", (long)lastPrintStats / 60000, (long)lastPrintStats % 60000);
+
                 if (customObservers)
-                    Console.WriteLine("  {0:0000}      {1:0000}     {2:0000000}    {3:0000000}    {4:00000}    {5:00000}    {6:00000}    {7:000000000}    {8:00000}", clientStats.Count, observers / clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
+                    Console.WriteLine("{0}   {0:0000}      {1:0000}     {2:0000000}    {3:0000000}    {4:00000}    {5:00000}    {6:00000}    {7:000000000}    {8:00000}", timeStamp, clientStats.Count, observers / clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
                 else
-                    Console.WriteLine("  {0:0000}     {1:0000000}    {2:0000000}    {3:00000}    {4:00000}    {5:00000}    {6:000000000}    {7:00000}", clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
+                    Console.WriteLine("{0}   {0:0000}     {1:0000000}    {2:0000000}    {3:00000}    {4:00000}    {5:00000}    {6:000000000}    {7:00000}", timeStamp, clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
 
                 printedLines += 1;
+
+                if (inputBuffer.Length > 0)
+                {
+                    Console.Write(inputBuffer);
+                }
             }
+
+            if (Console.KeyAvailable) GetInput();
+        }
+
+        string inputBuffer = "";
+
+        void GetInput()
+        {
+            ConsoleKeyInfo consoleKeyInfo = Console.ReadKey();
+            switch (consoleKeyInfo.Key)
+            {
+                case ConsoleKey.Backspace:
+                    if (inputBuffer.Length > 0)
+                    {
+                        // Delete the character (backspace + space + backspace)
+                        Console.Write("\b \b");
+                        inputBuffer = inputBuffer.Substring(0, inputBuffer.Length - 1);
+                    }
+                    break;
+                case ConsoleKey.Enter:
+                    if (inputBuffer.Length > 0)
+                    {
+                        Console.WriteLine();
+                        inputBuffer = inputBuffer.Trim();
+                        ProcessInput();
+                        inputBuffer = "";
+                    }
+                    break;
+                default:
+                    // Restrict to ASCII printable characters by matching range from space through tilde
+                    if (System.Text.RegularExpressions.Regex.IsMatch(consoleKeyInfo.KeyChar.ToString(), @"[ -~]"))
+                    {
+                        Console.Write(consoleKeyInfo.KeyChar);
+                        inputBuffer += consoleKeyInfo.KeyChar;
+                    }
+                    break;
+            }
+        }
+
+        void ProcessInput()
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("You entered {0}", inputBuffer);
+            Console.ResetColor();
         }
     }
 }

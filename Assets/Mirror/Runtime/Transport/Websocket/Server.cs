@@ -143,6 +143,10 @@ namespace Mirror.Websocket
                 }
 
             }
+            catch (IOException)
+            {
+                // do nothing. This will be thrown if the transport is closed
+            }
             catch (ObjectDisposedException)
             {
                 // do nothing. This will be thrown if the Listener has been stopped
@@ -274,7 +278,8 @@ namespace Mirror.Websocket
                 {
                     await client.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Binary, true, cancellation.Token);
                 }
-                catch (ObjectDisposedException) {
+                catch (ObjectDisposedException)
+                {
                     // connection has been closed,  swallow exception
                     Disconnect(connectionId);
                 }

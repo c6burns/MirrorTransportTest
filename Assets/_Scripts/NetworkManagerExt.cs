@@ -166,9 +166,9 @@ namespace TransportStress
                     Console.WriteLine();
 
                     if (customObservers)
-                        Console.WriteLine("Clients    Obs-A       Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
+                        Console.WriteLine("  Time     Clients    Obs-A       Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                     else
-                        Console.WriteLine("Clients      Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
+                        Console.WriteLine("  Time     Clients      Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A");
                 }
 
                 long observers = 0;
@@ -198,10 +198,16 @@ namespace TransportStress
                 if (clientStats.Count > 0)
                     avgPendingMsgs = pendingMessages / clientStats.Count;
 
+                TimeSpan ts = stopwatch.Elapsed;
+                string timeStamp = string.Format("{0:00}:{1:00}:{2:00}", ts.Hours, ts.Minutes, ts.Seconds);
+
                 if (customObservers)
-                    Console.WriteLine("  {0:0000}      {1:0000}     {2:0000000}    {3:0000000}    {4:00000}    {5:00000}    {6:00000}    {7:000000000}    {8:00000}", clientStats.Count, observers / clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
+                    Console.WriteLine("{0}     {1:0000}      {2:0000}     {3:0000000}    {4:0000000}    {5:00000}    {6:00000}    {7:00000}    {8:000000000}    {9:00000}", timeStamp, clientStats.Count, observers / clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
                 else
-                    Console.WriteLine("  {0:0000}     {1:0000000}    {2:0000000}    {3:00000}    {4:00000}    {5:00000}    {6:000000000}    {7:00000}", clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
+                    Console.WriteLine("{0}     {1:0000}     {2:0000000}    {3:0000000}    {4:00000}    {5:00000}    {6:00000}    {7:000000000}    {8:00000}", timeStamp, clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
+
+                //                       Time     Clients    Obs-A       Sent       Rcvd    Pends-A    Unks     OOOs     Delta-T    Delta-A
+                //                     00:00:00     0000      0000     0000000    0000000    00000    00000    00000    000000000    00000
 
                 printedLines += 1;
 

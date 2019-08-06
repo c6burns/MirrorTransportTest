@@ -20,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/TestAsyncAwaitTcp.unity
     guid: 987b5450812b3c7459a0d4fc8d5135a5
+  - enabled: 1
+    path: Assets/_Scenes/TestWebSockets.unity
+    guid: 5429635057ee1704995bf84fd4c1c872
   m_configObjects: {}

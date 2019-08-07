@@ -119,7 +119,7 @@ namespace TransportStress
 
         public override void Start()
         {
-            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            if (isHeadless)
             {
                 // After 5 seconds, UnloadUnusedAssets
                 Invoke(nameof(UnloadAssets), 5);

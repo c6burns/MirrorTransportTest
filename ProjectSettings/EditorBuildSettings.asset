@@ -6,21 +6,21 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/_Scenes/TestTelepathy.unity
-    guid: e8c7f786051553c4f9942d386bd7fdbc
+    path: Assets/_Scenes/TestIgnoranceThreaded.unity
+    guid: 2f173cc76dcfb7b44ad9ce66b76b341a
   - enabled: 1
-    path: Assets/_Scenes/TestIgnorance1.unity
-    guid: a32f4c715654f6045a08bee7a23b8b41
-  - enabled: 1
-    path: Assets/_Scenes/TestIgnorance2.unity
-    guid: e0f5b8f15891bba4ab85c5f05c4bc346
+    path: Assets/_Scenes/TestWebSockets.unity
+    guid: 5429635057ee1704995bf84fd4c1c872
   - enabled: 1
     path: Assets/_Scenes/TestLiteNetLib.unity
     guid: 04197d37264381f44b03febbb5162b3c
   - enabled: 1
+    path: Assets/_Scenes/TestIgnoranceClassic.unity
+    guid: a32f4c715654f6045a08bee7a23b8b41
+  - enabled: 1
+    path: Assets/_Scenes/TestTelepathy.unity
+    guid: e8c7f786051553c4f9942d386bd7fdbc
+  - enabled: 1
     path: Assets/_Scenes/TestAsyncAwaitTcp.unity
     guid: 987b5450812b3c7459a0d4fc8d5135a5
-  - enabled: 1
-    path: Assets/_Scenes/TestWebSockets.unity
-    guid: 5429635057ee1704995bf84fd4c1c872
   m_configObjects: {}

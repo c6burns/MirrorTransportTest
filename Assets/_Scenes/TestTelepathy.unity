@@ -211,7 +211,7 @@ MonoBehaviour:
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
-  printStatsInterval: 30
+  printStatsInterval: 15
   repeatHeadersLines: 30
   customObservers: 1
   spawnVolume: {x: 600, y: 600, z: 600}

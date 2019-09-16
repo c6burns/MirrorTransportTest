@@ -59,8 +59,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ServerOnly: 0
-  m_LocalPlayerAuthority: 0
+  serverOnly: 0
+  localPlayerAuthority: 0
   m_AssetId: 1b5275791f22a464ba0d9826f94b0920
   m_SceneId: 0
 --- !u!114 &224303908420899487
@@ -75,9 +75,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfe0e3fe51856f649bc9bc01e024afd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
   syncInterval: 0
   sendInterval: 100
-  updateInterval: 30
+  updateInterval: 15
   backlogLimit: 500
 --- !u!114 &6574584321592864327
 MonoBehaviour:
@@ -91,6 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 834b938eacb5c4443866a000cec16031, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
   syncInterval: 0.1
   customObservers: 0
   castLayers:

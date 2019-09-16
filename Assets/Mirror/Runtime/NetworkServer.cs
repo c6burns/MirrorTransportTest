@@ -257,7 +257,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use SendToAll<T> instead.
+        /// Obsolete: Use <see cref="SendToAll{T}(T, int)"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use SendToAll<T> instead.")]
         public static bool SendToAll(int msgType, MessageBase msg, int channelId = Channels.DefaultReliable)
@@ -300,7 +300,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use SendToReady<T> instead.
+        /// Obsolete: Use <see cref="SendToReady{T}(NetworkIdentity, T, int)"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use SendToReady<T> instead.")]
         public static bool SendToReady(NetworkIdentity identity, short msgType, MessageBase msg, int channelId = Channels.DefaultReliable)
@@ -333,9 +333,10 @@ namespace Mirror
         /// <typeparam name="T">Message type.</typeparam>
         /// <param name="identity"></param>
         /// <param name="msg">Message structure.</param>
+        /// <param name="includeSelf">Send to observers including self..</param>
         /// <param name="channelId">Transport channel to use</param>
         /// <returns></returns>
-        public static bool SendToReady<T>(NetworkIdentity identity,T msg, int channelId = Channels.DefaultReliable) where T : IMessageBase
+        public static bool SendToReady<T>(NetworkIdentity identity, T msg, bool includeSelf = true, int channelId = Channels.DefaultReliable) where T : IMessageBase
         {
             if (LogFilter.Debug) Debug.Log("Server.SendToReady msgType:" + typeof(T));
 
@@ -347,7 +348,9 @@ namespace Mirror
                 bool result = true;
                 foreach (KeyValuePair<int, NetworkConnection> kvp in identity.observers)
                 {
-                    if (kvp.Value.isReady)
+                    bool isSelf = kvp.Value == identity.connectionToClient;
+                    if ((!isSelf || includeSelf) &&
+                        kvp.Value.isReady)
                     {
                         result &= kvp.Value.SendBytes(bytes, channelId);
                     }
@@ -355,6 +358,20 @@ namespace Mirror
                 return result;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Send a message structure with the given type number to only clients which are ready.
+        /// <para>See Networking.NetworkClient.Ready.</para>
+        /// </summary>
+        /// <typeparam name="T">Message type.</typeparam>
+        /// <param name="identity"></param>
+        /// <param name="msg">Message structure.</param>
+        /// <param name="channelId">Transport channel to use</param>
+        /// <returns></returns>
+        public static bool SendToReady<T>(NetworkIdentity identity, T msg, int channelId = Channels.DefaultReliable) where T : IMessageBase
+        {
+            return SendToReady(identity, msg, true, channelId);
         }
 
         /// <summary>
@@ -439,7 +456,7 @@ namespace Mirror
                 // get ip address from connection
                 string address = Transport.activeTransport.ServerGetClientAddress(connectionId);
 
-                // add player info
+                // add connection
                 NetworkConnection conn = new NetworkConnection(address, connectionId);
                 OnConnected(conn);
             }
@@ -499,7 +516,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use RegisterHandler<T> instead.
+        /// Obsolete: Use <see cref="RegisterHandler{T}(Action{NetworkConnection, T})"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use RegisterHandler<T> instead.")]
         public static void RegisterHandler(int msgType, NetworkMessageDelegate handler)
@@ -512,7 +529,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use RegisterHandler<T> instead.
+        /// Obsolete: Use <see cref="RegisterHandler{T}(Action{NetworkConnection, T})"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use RegisterHandler<T> instead.")]
         public static void RegisterHandler(MsgType msgType, NetworkMessageDelegate handler)
@@ -537,7 +554,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use UnregisterHandler<T> instead.
+        /// Obsolete: Use <see cref="UnregisterHandler{T}"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use UnregisterHandler<T> instead.")]
         public static void UnregisterHandler(int msgType)
@@ -546,7 +563,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use UnregisterHandler<T> instead.
+        /// Obsolete: Use <see cref="UnregisterHandler{T}"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use UnregisterHandler<T> instead.")]
         public static void UnregisterHandler(MsgType msgType)
@@ -573,7 +590,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use SendToClient<T> instead.
+        /// Obsolete: Use <see cref="SendToClient{T}(int, T)"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use SendToClient<T> instead.")]
         public static void SendToClient(int connectionId, int msgType, MessageBase msg)
@@ -604,7 +621,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use SendToClientOfPlayer<T> instead.
+        /// Obsolete: Use <see cref="SendToClientOfPlayer{T}(NetworkIdentity, T)"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use SendToClientOfPlayer<T> instead.")]
         public static void SendToClientOfPlayer(NetworkIdentity identity, int msgType, MessageBase msg)
@@ -687,6 +704,13 @@ namespace Mirror
         {
             if (LogFilter.Debug) Debug.Log("Spawning " + NetworkIdentity.spawned.Count + " objects for conn " + conn.connectionId);
 
+            if (!conn.isReady)
+            {
+                // client needs to finish initializing before we can spawn objects
+                // otherwise it would not find them.
+                return;
+            }
+
             // let connection know that we are about to start spawning...
             conn.Send(new ObjectSpawnStartedMessage());
 
@@ -736,6 +760,8 @@ namespace Mirror
                 return false;
             }
 
+            // make sure we have a controller before we call SetClientReady
+            // because the observers will be rebuilt only if we have a controller
             conn.playerController = identity;
 
             // Set the connection on the NetworkIdentity on the server, NetworkIdentity.SetLocalPlayer is not called on the server (it is on clients)
@@ -743,13 +769,6 @@ namespace Mirror
 
             // set ready if not set yet
             SetClientReady(conn);
-
-            // add connection to observers AFTER the playerController was set.
-            // by definition, there is nothing to observe if there is no player
-            // controller.
-            //
-            // IMPORTANT: do this in AddPlayerForConnection & ReplacePlayerForConnection!
-            SpawnObserversForConnection(conn);
 
             if (SetupLocalPlayerForConnection(conn, identity))
             {
@@ -880,6 +899,10 @@ namespace Mirror
 
             // set ready
             conn.isReady = true;
+
+            // client is ready to start spawning objects
+            if (conn.playerController != null)
+                SpawnObserversForConnection(conn);
         }
 
         internal static void ShowForConnection(NetworkIdentity identity, NetworkConnection conn)
@@ -1003,20 +1026,19 @@ namespace Mirror
 
             if (LogFilter.Debug) Debug.Log("Server SendSpawnMessage: name=" + identity.name + " sceneId=" + identity.sceneId.ToString("X") + " netid=" + identity.netId); // for easier debugging
 
-            NetworkWriter writer = NetworkWriterPool.GetWriter();
-           
-            
+            // one writer for owner, one for observers
+            NetworkWriter ownerWriter = NetworkWriterPool.GetWriter();
+            NetworkWriter observersWriter = NetworkWriterPool.GetWriter();
 
-            // convert to ArraySegment to avoid reader allocations
-            // (need to handle null case too)
-            ArraySegment<byte> segment = default;
 
             // serialize all components with initialState = true
             // (can be null if has none)
-            if (identity.OnSerializeAllSafely(true, writer))
-            {
-                segment = writer.ToArraySegment();
-            }
+            identity.OnSerializeAllSafely(true, ownerWriter, out int ownerWritten, observersWriter, out int observersWritten);
+
+            // convert to ArraySegment to avoid reader allocations
+            // (need to handle null case too)
+            ArraySegment<byte> ownerSegment     =     ownerWritten > 0 ?     ownerWriter.ToArraySegment() : default;
+            ArraySegment<byte> observersSegment = observersWritten > 0 ? observersWriter.ToArraySegment() : default;
 
             // 'identity' is a prefab that should be spawned
             if (identity.sceneId == 0)
@@ -1029,19 +1051,35 @@ namespace Mirror
                     // use local values for VR support
                     position = identity.transform.localPosition,
                     rotation = identity.transform.localRotation,
-                    scale = identity.transform.localScale,
-                    payload = segment
+                    scale = identity.transform.localScale
                 };
 
                 // conn is != null when spawning it for a client
                 if (conn != null)
                 {
+                    // use owner segment if 'conn' owns this identity, otherwise
+                    // use observers segment
+                    bool isOwner = identity.connectionToClient == conn;
+                    msg.payload = isOwner ? ownerSegment : observersSegment;
+
                     conn.Send(msg);
                 }
                 // conn is == null when spawning it for the local player
                 else
                 {
-                    SendToReady(identity, msg);
+                    // send ownerWriter to owner
+                    // (spawn no matter what, even if no components were
+                    //  serialized because the spawn message contains more data.
+                    //  components might still be updated later on.)
+                    msg.payload = ownerSegment;
+                    SendToClientOfPlayer(identity, msg);
+
+                    // send observersWriter to everyone but owner
+                    // (spawn no matter what, even if no components were
+                    //  serialized because the spawn message contains more data.
+                    //  components might still be updated later on.)
+                    msg.payload = observersSegment;
+                    SendToReady(identity, msg, false);
                 }
             }
             // 'identity' is a scene object that should be spawned again
@@ -1055,23 +1093,40 @@ namespace Mirror
                     // use local values for VR support
                     position = identity.transform.localPosition,
                     rotation = identity.transform.localRotation,
-                    scale = identity.transform.localScale,
-                    payload = segment
+                    scale = identity.transform.localScale
                 };
 
                 // conn is != null when spawning it for a client
                 if (conn != null)
                 {
+                    // use owner segment if 'conn' owns this identity, otherwise
+                    // use observers segment
+                    bool isOwner = identity.connectionToClient == conn;
+                    msg.payload = isOwner ? ownerSegment : observersSegment;
+
                     conn.Send(msg);
                 }
                 // conn is == null when spawning it for the local player
                 else
                 {
-                    SendToReady(identity, msg);
+                    // send ownerWriter to owner
+                    // (spawn no matter what, even if no components were
+                    //  serialized because the spawn message contains more data.
+                    //  components might still be updated later on.)
+                    msg.payload = ownerSegment;
+                    SendToClientOfPlayer(identity, msg);
+
+                    // send observersWriter to everyone but owner
+                    // (spawn no matter what, even if no components were
+                    //  serialized because the spawn message contains more data.
+                    //  components might still be updated later on.)
+                    msg.payload = observersSegment;
+                    SendToReady(identity, msg, false);
                 }
             }
 
-            NetworkWriterPool.Recycle(writer);
+            NetworkWriterPool.Recycle(ownerWriter);
+            NetworkWriterPool.Recycle(observersWriter);
         }
 
         /// <summary>
@@ -1296,7 +1351,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use NetworkIdentity.spawned[netId] instead.
+        /// Obsolete: Use <see cref="NetworkIdentity.spawned"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use NetworkIdentity.spawned[netId] instead.")]
         public static GameObject FindLocalObject(uint netId)

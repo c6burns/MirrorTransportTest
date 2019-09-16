@@ -1,23 +1,12 @@
 ﻿using System.Diagnostics;
-using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 using System;
 
-namespace TransportStress
+namespace MirrorLoadTest
 {
     public class NetworkManagerExt : NetworkManager
     {
-        public struct ClientStats
-        {
-            public long sentMessages;
-            public long receivedMessages;
-            public long pendingMessages;
-            public long unknownMessages;
-            public long outOfOrderMessages;
-            public long totalDeltaTime;
-        }
-
         [Header("Custom Settings")]
         [Range(3, 300), Tooltip("Interval to print stats (seconds)")]
         public int printStatsInterval = 30;
@@ -30,8 +19,6 @@ namespace TransportStress
 
         [Tooltip("Total size of the area for random spawning")]
         public Vector3 spawnVolume = new Vector3(600, 600, 600);
-
-        public static Dictionary<NetworkConnection, ClientStats> clientStats = new Dictionary<NetworkConnection, ClientStats>();
 
         public override void OnServerConnect(NetworkConnection conn)
         {
@@ -72,7 +59,7 @@ namespace TransportStress
             player.GetComponent<AreaOfInterest>().customObservers = customObservers;
             NetworkServer.AddPlayerForConnection(conn, player);
 
-            clientStats.Add(conn, new ClientStats());
+            Stats.stats.Add(conn, new ClientStats());
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("OnServerAddPlayer ID: {0:0000}  Observers: {1:0000}  Pos: {2}", conn.connectionId, conn.playerController.observers.Count, conn.playerController.gameObject.transform.position);
@@ -86,7 +73,7 @@ namespace TransportStress
             Console.ResetColor();
 
             base.OnServerDisconnect(conn);
-            clientStats.Remove(conn);
+            Stats.stats.Remove(conn);
         }
 
         public override void OnClientConnect(NetworkConnection conn)
@@ -112,8 +99,8 @@ namespace TransportStress
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine("OnClientDisconnect");
             Console.ResetColor();
- 
-           base.OnClientDisconnect(conn);
+
+            base.OnClientDisconnect(conn);
         }
 
         public override void Start()
@@ -183,61 +170,14 @@ namespace TransportStress
         {
             if (!NetworkServer.active) return;
 
-            if (clientStats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
+            if (Stats.stats.Count > 0 && stopwatch.ElapsedMilliseconds > lastPrintStats + printStatsInterval * 1000)
             {
                 lastPrintStats = stopwatch.ElapsedMilliseconds;
 
                 if (inputBuffer.Length > 0)
                     Console.WriteLine();
 
-                if (printedLines % repeatHeadersLines == 0)
-                {
-                    // blank line above headers
-                    Console.WriteLine();
-
-                    if (customObservers)
-                        Console.WriteLine("  Time     Clients   Obs-A     Sent      Rcvd   Pends-A   Unks    OOOs    Delta-T    Delta-A");
-                    else
-                        Console.WriteLine("  Time     Clients     Sent     Rcvd    Pends-A   Unks    OOOs    Delta-T    Delta-A");
-                }
-
-                long observers = 0;
-                long sentMessages = 0;
-                long receivedMessages = 0;
-                long pendingMessages = 0;
-                long unknownMessages = 0;
-                long outOfOrderMessages = 0;
-                long totalDeltaTime = 0;
-                long avgDeltaTime = 0;
-                long avgPendingMsgs = 0;
-
-                foreach (KeyValuePair<NetworkConnection, ClientStats> kvp in clientStats)
-                {
-                    observers += kvp.Key.playerController.observers.Count;
-                    sentMessages += kvp.Value.sentMessages;
-                    receivedMessages += kvp.Value.receivedMessages;
-                    pendingMessages += kvp.Value.pendingMessages;
-                    unknownMessages += kvp.Value.unknownMessages;
-                    outOfOrderMessages += kvp.Value.outOfOrderMessages;
-                    totalDeltaTime += kvp.Value.totalDeltaTime;
-                }
-
-                if (sentMessages > 0)
-                    avgDeltaTime = totalDeltaTime / sentMessages;
-
-                if (clientStats.Count > 0)
-                    avgPendingMsgs = pendingMessages / clientStats.Count;
-
-                TimeSpan ts = stopwatch.Elapsed;
-                string timeStamp = string.Format("{0:00}:{1:00}:{2:00}", ts.Hours, ts.Minutes, ts.Seconds);
-
-                if (customObservers)
-                    Console.WriteLine("{0}     {1:0000}     {2:0000}   {3:0000000}   {4:0000000}   {5:00000}   {6:00000}   {7:00000}   {8:000000000}    {9:00000}", timeStamp, clientStats.Count, observers / clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
-                else
-                    Console.WriteLine("{0}     {1:0000}    {2:0000000}  {3:0000000}    {4:00000}   {5:00000}   {6:00000}   {7:000000000}    {8:00000}", timeStamp, clientStats.Count, sentMessages, receivedMessages, pendingMessages, unknownMessages, outOfOrderMessages, totalDeltaTime, avgDeltaTime);
-
-                //                       Time     Clients   Obs-A     Sent      Rcvd   Pends-A   Unks    OOOs    Delta-T   Delta-A
-                //                     00:00:00     0000     0000   0000000   0000000   00000   00000   00000   000000000   00000
+                Stats.PrintStats(customObservers, printedLines, repeatHeadersLines, stopwatch.Elapsed);
 
                 printedLines += 1;
 

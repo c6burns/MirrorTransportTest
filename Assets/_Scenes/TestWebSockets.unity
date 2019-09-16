@@ -214,7 +214,7 @@ MonoBehaviour:
   spawnPrefabs: []
   printStatsInterval: 30
   repeatHeadersLines: 30
-  customObservers: 1
+  customObservers: 0
   spawnVolume: {x: 600, y: 600, z: 600}
 --- !u!4 &976758168
 Transform:

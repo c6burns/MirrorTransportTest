@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TransportStress
+namespace MirrorLoadTest
 {
     public class AreaOfInterest : NetworkBehaviour
     {

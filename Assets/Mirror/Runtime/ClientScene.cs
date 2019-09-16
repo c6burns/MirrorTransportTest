@@ -20,8 +20,6 @@ namespace Mirror
     {
         static bool isSpawnFinished;
 
-        static HashSet<uint> pendingOwnerNetIds = new HashSet<uint>();
-
         /// <summary>
         /// NetworkIdentity of the localPlayer
         /// </summary>
@@ -54,15 +52,14 @@ namespace Mirror
         public static Dictionary<ulong, NetworkIdentity> spawnableObjects;
 
         // spawn handlers
-        static Dictionary<Guid, SpawnDelegate> spawnHandlers = new Dictionary<Guid, SpawnDelegate>();
-        static Dictionary<Guid, UnSpawnDelegate> unspawnHandlers = new Dictionary<Guid, UnSpawnDelegate>();
+        static readonly Dictionary<Guid, SpawnDelegate> spawnHandlers = new Dictionary<Guid, SpawnDelegate>();
+        static readonly Dictionary<Guid, UnSpawnDelegate> unspawnHandlers = new Dictionary<Guid, UnSpawnDelegate>();
 
         // this is never called, and if we do call it in NetworkClient.Shutdown
         // then the client's player object won't be removed after disconnecting!
         internal static void Shutdown()
         {
             ClearSpawners();
-            pendingOwnerNetIds.Clear();
             spawnableObjects = null;
             readyConnection = null;
             ready = false;
@@ -107,7 +104,7 @@ namespace Mirror
         /// <para>extraMessage can contain character selection, etc.</para>
         /// </summary>
         /// <param name="readyConn">The connection to become ready for this client.</param>
-        /// <param name="extraMessage">An extra message object that can be passed to the server for this player.</param>
+        /// <param name="extraData">An extra message object that can be passed to the server for this player.</param>
         /// <returns>True if player was added.</returns>
         public static bool AddPlayer(NetworkConnection readyConn, byte[] extraData)
         {
@@ -230,8 +227,14 @@ namespace Mirror
             return null;
         }
 
-        // spawn handlers and prefabs
-        static bool GetPrefab(Guid assetId, out GameObject prefab)
+        /// <summary>
+        /// Find the registered prefab for this asset id.
+        /// Useful for debuggers
+        /// </summary>
+        /// <param name="assetId">asset id of the prefab</param>
+        /// <param name="prefab">the prefab gameobject</param>
+        /// <returns>true if prefab was registered</returns>
+        public static bool GetPrefab(Guid assetId, out GameObject prefab)
         {
             prefab = null;
             return assetId != Guid.Empty &&
@@ -421,7 +424,7 @@ namespace Mirror
         }
 
         /// <summary>
-        /// Obsolete: Use NetworkIdentity.spawned[netId] instead.
+        /// Obsolete: Use <see cref="NetworkIdentity.spawned"/> instead.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Use NetworkIdentity.spawned[netId] instead.")]
         public static GameObject FindLocalObject(uint netId)
@@ -464,7 +467,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnSpawnPrefab(NetworkConnection conn, SpawnPrefabMessage msg)
+        internal static void OnSpawnPrefab(NetworkConnection _, SpawnPrefabMessage msg)
         {
             if (msg.assetId == Guid.Empty)
             {
@@ -502,6 +505,7 @@ namespace Mirror
                     return;
                 }
                 localObject.Reset();
+                localObject.pendingOwner = msg.owner;
                 ApplySpawnPayload(localObject, msg.position, msg.rotation, msg.scale, msg.payload, msg.netId);
             }
             // lookup registered factory for type:
@@ -520,6 +524,7 @@ namespace Mirror
                     return;
                 }
                 localObject.Reset();
+                localObject.pendingOwner = msg.owner;
                 localObject.assetId = msg.assetId;
                 ApplySpawnPayload(localObject, msg.position, msg.rotation, msg.scale, msg.payload, msg.netId);
             }
@@ -529,7 +534,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnSpawnSceneObject(NetworkConnection conn, SpawnSceneObjectMessage msg)
+        internal static void OnSpawnSceneObject(NetworkConnection _, SpawnSceneObjectMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("Client spawn scene handler instantiating [netId:" + msg.netId + " sceneId:" + msg.sceneId + " pos:" + msg.position);
 
@@ -564,10 +569,11 @@ namespace Mirror
 
             if (LogFilter.Debug) Debug.Log("Client spawn for [netId:" + msg.netId + "] [sceneId:" + msg.sceneId + "] obj:" + spawnedId.gameObject.name);
             spawnedId.Reset();
+            spawnedId.pendingOwner = msg.owner;
             ApplySpawnPayload(spawnedId, msg.position, msg.rotation, msg.scale, msg.payload, msg.netId);
         }
 
-        internal static void OnObjectSpawnStarted(NetworkConnection conn, ObjectSpawnStartedMessage msg)
+        internal static void OnObjectSpawnStarted(NetworkConnection _, ObjectSpawnStartedMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("SpawnStarted");
 
@@ -575,7 +581,7 @@ namespace Mirror
             isSpawnFinished = false;
         }
 
-        internal static void OnObjectSpawnFinished(NetworkConnection conn, ObjectSpawnFinishedMessage msg)
+        internal static void OnObjectSpawnFinished(NetworkConnection _, ObjectSpawnFinishedMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("SpawnFinished");
 
@@ -593,12 +599,12 @@ namespace Mirror
             isSpawnFinished = true;
         }
 
-        internal static void OnObjectHide(NetworkConnection conn, ObjectHideMessage msg)
+        internal static void OnObjectHide(NetworkConnection _, ObjectHideMessage msg)
         {
             DestroyObject(msg.netId);
         }
 
-        internal static void OnObjectDestroy(NetworkConnection conn, ObjectDestroyMessage msg)
+        internal static void OnObjectDestroy(NetworkConnection _, ObjectDestroyMessage msg)
         {
             DestroyObject(msg.netId);
         }
@@ -634,14 +640,14 @@ namespace Mirror
             }
         }
 
-        internal static void OnLocalClientObjectDestroy(NetworkConnection conn, ObjectDestroyMessage msg)
+        internal static void OnLocalClientObjectDestroy(NetworkConnection _, ObjectDestroyMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene.OnLocalObjectObjDestroy netId:" + msg.netId);
 
             NetworkIdentity.spawned.Remove(msg.netId);
         }
 
-        internal static void OnLocalClientObjectHide(NetworkConnection conn, ObjectHideMessage msg)
+        internal static void OnLocalClientObjectHide(NetworkConnection _, ObjectHideMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene::OnLocalObjectObjHide netId:" + msg.netId);
 
@@ -651,7 +657,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnLocalClientSpawnPrefab(NetworkConnection conn, SpawnPrefabMessage msg)
+        internal static void OnLocalClientSpawnPrefab(NetworkConnection _, SpawnPrefabMessage msg)
         {
             if (NetworkIdentity.spawned.TryGetValue(msg.netId, out NetworkIdentity localObject) && localObject != null)
             {
@@ -659,7 +665,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnLocalClientSpawnSceneObject(NetworkConnection conn, SpawnSceneObjectMessage msg)
+        internal static void OnLocalClientSpawnSceneObject(NetworkConnection _, SpawnSceneObjectMessage msg)
         {
             if (NetworkIdentity.spawned.TryGetValue(msg.netId, out NetworkIdentity localObject) && localObject != null)
             {
@@ -667,7 +673,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnUpdateVarsMessage(NetworkConnection conn, UpdateVarsMessage msg)
+        internal static void OnUpdateVarsMessage(NetworkConnection _, UpdateVarsMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene.OnUpdateVarsMessage " + msg.netId);
 
@@ -681,7 +687,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnRPCMessage(NetworkConnection conn, RpcMessage msg)
+        internal static void OnRPCMessage(NetworkConnection _, RpcMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene.OnRPCMessage hash:" + msg.functionHash + " netId:" + msg.netId);
 
@@ -691,7 +697,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnSyncEventMessage(NetworkConnection conn, SyncEventMessage msg)
+        internal static void OnSyncEventMessage(NetworkConnection _, SyncEventMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene.OnSyncEventMessage " + msg.netId);
 
@@ -705,7 +711,7 @@ namespace Mirror
             }
         }
 
-        internal static void OnClientAuthority(NetworkConnection conn, ClientAuthorityMessage msg)
+        internal static void OnClientAuthority(NetworkConnection _, ClientAuthorityMessage msg)
         {
             if (LogFilter.Debug) Debug.Log("ClientScene.OnClientAuthority for netId: " + msg.netId);
 
@@ -733,15 +739,11 @@ namespace Mirror
                 localObject.SetLocalPlayer();
                 InternalAddPlayer(localObject);
             }
-            else
-            {
-                pendingOwnerNetIds.Add(netId);
-            }
         }
 
         static void CheckForOwner(NetworkIdentity identity)
         {
-            if (pendingOwnerNetIds.Contains(identity.netId))
+            if (identity.pendingOwner)
             {
                 // found owner, turn into a local player
 
@@ -757,7 +759,7 @@ namespace Mirror
                 }
                 InternalAddPlayer(identity);
 
-                pendingOwnerNetIds.Remove(identity.netId);
+                identity.pendingOwner = false;
             }
         }
     }

@@ -184,9 +184,9 @@ MonoBehaviour:
   serverIPv4BindAddress: 0.0.0.0
   serverIPv6BindAddress: '::'
   port: 7777
-  useUpnP: 1
+  useUpnP: 0
   maxConnections: 10000
-  ipv6Enabled: 1
+  ipv6Enabled: 0
   channels: 0300000000000000020000000400000001000000
   authCode: 
   updateTime: 15
@@ -236,7 +236,7 @@ MonoBehaviour:
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
-  printStatsInterval: 30
+  printStatsInterval: 15
   repeatHeadersLines: 30
   customObservers: 1
   spawnVolume: {x: 600, y: 600, z: 600}

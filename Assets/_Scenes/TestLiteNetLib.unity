@@ -175,7 +175,7 @@ MonoBehaviour:
   ipv6Enabled: 0
   channels: 0300000000000000020000000400000001000000
   authCode: 
-  updateTime: 15
+  updateTime: 5
   pingInterval: 1000
   disconnectTimeout: 5000
   reconnectDelay: 500

@@ -31,6 +31,8 @@ namespace MirrorLoadTest
         // Messages are added to this list when a later message arrives
         List<MessageData> MissingMessages = new List<MessageData>();
 
+        MessageData[] msgRingBuffer = new MessageData[50];
+
         long lastCmdSyncData = 0;
         long lastUpdateStats = 0;
 
@@ -99,6 +101,7 @@ namespace MirrorLoadTest
         void CmdSendData(MessageData clientData)
         {
             //Console.WriteLine("Server Received data {0} {1}", clientData.messages, clientData.timestamp);
+            msgRingBuffer[clientData.messages % 50] = clientData;
             RpcRelayData(clientData);
         }
 
@@ -189,6 +192,12 @@ namespace MirrorLoadTest
 
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine("{0} Client {1} missing msg {2} {3}", timeStamp, connectionToClient.connectionId, messageData.messages, messageData.timestamp);
+
+            if (Array.IndexOf(msgRingBuffer, messageData) >= 0)
+            {
+                Console.WriteLine("{0} Server has msg {1} in the ring buffer.", timeStamp, messageData.messages);
+            }
+
             Console.ResetColor();
         }
 

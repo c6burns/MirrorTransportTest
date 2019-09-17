@@ -98,4 +98,4 @@ MonoBehaviour:
   castLayers:
     serializedVersion: 2
     m_Bits: 512
-  visibleRange: 200
+  visibleRange: 40
